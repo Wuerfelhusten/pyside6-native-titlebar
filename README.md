@@ -57,7 +57,7 @@ Create and modify widgets on the QApplication GUI thread. Inherited Qt methods k
 
 ## Examples
 
-The main demo is [`examples/demo.py`](examples/demo.py). The gallery adds theme, height, title, and icon controls:
+The main demo is [`examples/demo.py`](https://github.com/Wuerfelhusten/pyside6-native-titlebar/blob/master/examples/demo.py). The gallery adds theme, height, title, and icon controls:
 
 ```powershell
 uv run python examples/demo.py
@@ -123,4 +123,4 @@ Use the version you actually set in `_version.py`; PyPI versions cannot be reuse
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Google's included Pylint configuration retains its [Apache-2.0 license](LICENSES/Apache-2.0.txt) and its copyright notice in `.pylintrc`.
+MIT — see [LICENSE](https://github.com/Wuerfelhusten/pyside6-native-titlebar/blob/master/LICENSE). Google's included Pylint configuration retains its [Apache-2.0 license](https://github.com/Wuerfelhusten/pyside6-native-titlebar/blob/master/LICENSES/Apache-2.0.txt) and its copyright notice in `.pylintrc`.
