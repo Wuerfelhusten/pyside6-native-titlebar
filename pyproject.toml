@@ -1,0 +1,145 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyside6-native-titlebar"
+dynamic = ["version"]
+description = "Native Windows title bar integration for PySide6 applications"
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Modding Forge", email = "info@moddingforge.com" }]
+maintainers = [{ name = "Wuerfelhusten" }]
+keywords = ["pyside6", "qt", "windows", "titlebar", "winui", "gui", "native"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Win32 (MS Windows)",
+  "Intended Audience :: Developers",
+  "Operating System :: Microsoft :: Windows :: Windows 10",
+  "Operating System :: Microsoft :: Windows :: Windows 11",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = [
+  "PySide6==6.8.3; python_version < '3.14'",
+  "PySide6==6.12.0; python_version >= '3.14'",
+  "winui3-Microsoft.UI.Windowing[all]==3.2.1; sys_platform == 'win32'",
+  "winui3-Microsoft.UI.Interop==3.2.1; sys_platform == 'win32'",
+  "winui3-Microsoft.Windows.ApplicationModel.DynamicDependency.Bootstrap==3.2.1; sys_platform == 'win32'",
+]
+
+[project.scripts]
+native-titlebar-check = "native_titlebar.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/Wuerfelhusten/pyside6-native-titlebar"
+Issues = "https://github.com/Wuerfelhusten/pyside6-native-titlebar/issues"
+"Modding Forge" = "https://moddingforge.com/"
+
+[dependency-groups]
+dev = [
+  "black>=25,<27",
+  "mypy>=1.15,<2",
+  "packaging>=26.1,<27",
+  "pylint>=3.3,<5",
+  "pytest>=8,<9",
+  "pytest-cov>=6,<8",
+  "ruff>=0.11,<1",
+  "twine>=7,<8",
+]
+
+[tool.hatch.version]
+path = "src/native_titlebar/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/native_titlebar"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/examples", "/tests", "/tools", "/README.md", "/LICENSE", "/LICENSES", "/pyproject.toml", "/uv.lock", "/.python-version", "/.pylintrc", "/.pre-commit-config.yaml", "/.github", "/.editorconfig", "/.gitignore", "/.gitattributes"]
+exclude = ["**/__pycache__", "**/*.pyc"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--strict-markers"
+markers = ["windows: requires real Windows HWNDs and Windows App Runtime 1.7"]
+
+[tool.black]
+line-length = 80
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 80
+target-version = "py311"
+extend-exclude = ["artifacts", ".research"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812", # Black owns trailing-comma formatting.
+  "D401",   # Google permits descriptive docstrings ("Returns", "Checks").
+  "TRY003", # Public errors carry actionable messages at the failure site.
+  # Keep existing generic syntax for Nuitka compatibility:
+  # https://github.com/Nuitka/Nuitka/issues/2930
+  "UP046",  # Do not convert generic classes to PEP 695 type parameters.
+  "UP047",  # Do not convert generic functions to PEP 695 type parameters.
+]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest relies on assertions; fixtures are concrete data, not magic constants.
+"tests/**" = ["S101", "PLR2004", "INP001"]
+# Examples are standalone programs rather than an importable package.
+"examples/**" = ["INP001"]
+# Only this backend must delay native imports until runtime bootstrap succeeds.
+"src/native_titlebar/platform/windows.py" = ["PLC0415"]
+# Integration tests inspect the internal Qt/WinRT boundary and inject failures.
+"tests/test_windows_integration.py" = ["SLF001"]
+# CLI reports are intentional stdout output.
+"src/native_titlebar/__main__.py" = ["T201"]
+# Release commands print validation results and diagnostic reports.
+"tools/check_release_version.py" = ["T201"]
+"tools/package_smoke.py" = ["T201"]
+
+[tool.ruff.lint.pep8-naming]
+# Qt virtual methods and public signal aliases must keep their binding names.
+extend-ignore-names = [
+  "paintEvent", "eventFilter", "showEvent", "nativeEvent",
+  "geometryChanged", "integrationError",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+force-single-line = true
+force-sort-within-sections = true
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/native_titlebar", "examples", "tests", "tools"]
+strict = true
+disallow_any_unimported = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[[tool.mypy.overrides]]
+module = ["native_titlebar.*"]
+disallow_any_explicit = true
+
+[[tool.mypy.overrides]]
+# PyWinRT's namespace root lacks py.typed; follow its shipped .pyi files.
+module = ["winui3.*", "winrt.*"]
+follow_untyped_imports = true
+
+[tool.coverage.run]
+source = ["native_titlebar"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true

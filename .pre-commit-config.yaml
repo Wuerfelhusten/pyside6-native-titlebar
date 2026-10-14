@@ -1,0 +1,27 @@
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: Black (80 columns)
+        entry: uv run black --check src examples tests tools
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: ruff
+        name: Ruff and Google docstrings
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: pylint
+        name: Google Pylint
+        entry: uv run pylint src/native_titlebar examples tests tools
+        language: system
+        pass_filenames: false
+        types: [python]
+      - id: mypy
+        name: Project type checking
+        entry: uv run mypy
+        language: system
+        pass_filenames: false
+        types: [python]

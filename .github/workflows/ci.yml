@@ -1,0 +1,68 @@
+name: Library checks
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_call:
+    inputs:
+      native_tests:
+        description: Run real HWND tests on a configured desktop runner
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      native_tests:
+        description: Run real HWND tests on a configured desktop runner
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  portable-tests:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.12.18"
+      - run: uv sync --locked --python ${{ matrix.python }}
+      - run: uv run pytest -q -m "not windows"
+
+  quality:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.12.18"
+      - run: uv sync --locked
+      - run: uv run black --check src examples tests tools
+      - run: uv run ruff check .
+      - run: uv run pylint src/native_titlebar examples tests tools
+      - run: uv run mypy
+
+  native-tests:
+    if: github.event_name == 'workflow_dispatch' && inputs.native_tests
+    runs-on: [self-hosted, Windows, X64, desktop]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.12.18"
+      - run: uv sync --locked
+      - run: uv run python -m native_titlebar
+      - run: uv run pytest -q -m windows --junitxml=artifacts/native-tests.xml
+      - uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: native-test-results
+          path: artifacts/native-tests.xml

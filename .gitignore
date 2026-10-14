@@ -1,0 +1,50 @@
+# Python environments and bytecode
+.venv/
+venv/
+env/
+__pypackages__/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build and packaging outputs
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Test, lint, and type-check caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+junit*.xml
+
+# Local diagnostics and research
+/artifacts/
+/.research/
+*.log
+
+# Local credentials and settings
+.env
+.env.*
+!.env.example
+*.local
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
