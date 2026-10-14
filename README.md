@@ -12,20 +12,20 @@ Qt draws the optional window icon and title. Windows manages the caption control
 
 The project targets Python 3.11–3.14 and requires **Windows App Runtime 1.7**. Dependencies select PySide6 6.8.3 for Python 3.11–3.13 and PySide6 6.12.0 for Python 3.14. Install the runtime separately for your Python architecture using [Microsoft's installer](https://learn.microsoft.com/windows/apps/windows-app-sdk/downloads). Runtime 1.8 alone does not satisfy these bindings.
 
-Install from a local checkout:
+Install from PyPI:
 
 ```powershell
-python -m pip install .
+python -m pip install pyside6-native-titlebar
 ```
 
-For development and examples:
+To install a local checkout, use `python -m pip install .`. For development and examples:
 
 ```powershell
 uv sync --locked
 uv run python -m native_titlebar
 ```
 
-The diagnostic command checks installation without opening a window. Use `--json` for structured output. This project does not assume a published PyPI release.
+The diagnostic command checks installation without opening a window. Use `--json` for structured output.
 
 ## Quick start
 
