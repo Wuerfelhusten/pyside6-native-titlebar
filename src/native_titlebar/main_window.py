@@ -14,6 +14,7 @@ from typing import overload
 from PySide6 import QtCore
 from PySide6 import QtWidgets
 import shiboken6
+import typing_extensions
 
 from native_titlebar import _integration
 from native_titlebar import _qt
@@ -55,7 +56,7 @@ class NativeMainWindow(QtWidgets.QMainWindow):
         self._content_margins = QtCore.QMargins()
         super().__init__(parent, QtCore.Qt.WindowType.Window)
         self.titlebar = titlebar.TitleBar(self)
-        self.set_central_widget(QtWidgets.QWidget())
+        self.setCentralWidget(QtWidgets.QWidget())
         self._integration = _integration.WindowIntegration(
             self,
             self.titlebar,
@@ -96,6 +97,7 @@ class NativeMainWindow(QtWidgets.QMainWindow):
         bottom: int,
     ) -> None: ...
 
+    @typing_extensions.override
     def setContentsMargins(
         self,
         left: int | QtCore.QMargins,
@@ -131,12 +133,13 @@ class NativeMainWindow(QtWidgets.QMainWindow):
             raise TypeError(msg)
         self._update_titlebar_layout()
 
-    def set_central_widget(self, widget: QtWidgets.QWidget | None) -> None:
+    @typing_extensions.override
+    def setCentralWidget(self, widget: QtWidgets.QWidget | None) -> None:
         """Replaces the content using QMainWindow's ownership rules.
 
         Args:
             widget: New content owned by this window, or None to remove it.
-                Call take_central_widget() first to preserve existing content.
+                Call takeCentralWidget() first to preserve existing content.
 
         Raises:
             GUIThreadError: If called outside the QApplication GUI thread.
@@ -163,27 +166,6 @@ class NativeMainWindow(QtWidgets.QMainWindow):
         elif widget is not self.centralWidget():
             super().setCentralWidget(widget)
 
-    def central_widget(self) -> QtWidgets.QWidget | None:
-        """Returns the current QMainWindow content, or None if absent.
-
-        Raises:
-            GUIThreadError: If called outside the QApplication GUI thread.
-        """
-        _qt.require_gui_thread()
-        return self.centralWidget()
-
-    def take_central_widget(self) -> QtWidgets.QWidget | None:
-        """Detaches central content without deleting it.
-
-        Returns:
-            The previous content, now owned by the caller, or None if absent.
-
-        Raises:
-            GUIThreadError: If called outside the QApplication GUI thread.
-        """
-        _qt.require_gui_thread()
-        return self.takeCentralWidget()
-
     # Qt's toggled(bool) signal passes its value positionally.
     def set_tall_title_bar(
         self,
@@ -199,6 +181,7 @@ class NativeMainWindow(QtWidgets.QMainWindow):
         """
         self._integration.set_tall_title_bar(tall)
 
+    @typing_extensions.override
     def event(self, event: QtCore.QEvent) -> bool:
         """Updates native geometry after Qt processes a window event."""
         result = super().event(event)
@@ -208,6 +191,7 @@ class NativeMainWindow(QtWidgets.QMainWindow):
             self._integration.handle_event(event)
         return result
 
+    @typing_extensions.override
     def nativeEvent(
         self,
         event_type: QtCore.QByteArray | bytes | bytearray | memoryview,
@@ -242,12 +226,3 @@ class NativeMainWindow(QtWidgets.QMainWindow):
     def last_error(self) -> str | None:
         """The last asynchronous error, or None after a successful sync."""
         return self._integration.last_error
-
-    # Keep Qt's spelling while validating central widget ownership.
-    setCentralWidget = set_central_widget  # noqa: N815
-    setTallTitleBar = set_tall_title_bar  # noqa: N815
-
-    @property
-    def integrationError(self) -> QtCore.SignalInstance:
-        """The Qt-style compatibility alias for integration_error."""
-        return self.integration_error

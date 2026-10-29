@@ -14,6 +14,7 @@ from PySide6 import QtCore
 from PySide6 import QtGui
 from PySide6 import QtWidgets
 import shiboken6
+import typing_extensions
 
 from native_titlebar import _qt
 from native_titlebar import geometry
@@ -213,6 +214,7 @@ class TitleBar(QtWidgets.QWidget):
                 right = min(right, widget.x() - 12)
         return QtCore.QRect(left, 0, max(0, right - left), self.height())
 
+    @typing_extensions.override
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         """Paints the Qt-owned title and icon beside native caption buttons."""
         super().paintEvent(event)
@@ -280,6 +282,7 @@ class TitleBar(QtWidgets.QWidget):
             )
         return result
 
+    @typing_extensions.override
     def event(self, event: QtCore.QEvent) -> bool:
         """Schedules input region updates when this widget changes."""
         result = super().event(event)
@@ -293,6 +296,7 @@ class TitleBar(QtWidgets.QWidget):
             self.geometry_changed.emit()
         return result
 
+    @typing_extensions.override
     def eventFilter(
         self, watched: QtCore.QObject, event: QtCore.QEvent
     ) -> bool:
@@ -308,13 +312,3 @@ class TitleBar(QtWidgets.QWidget):
             self.update()
             self.geometry_changed.emit()
         return super().eventFilter(watched, event)
-
-    # Qt-style names remain supported for applications written against 0.1.
-    addWidget = add_widget  # noqa: N815
-    removeWidget = remove_widget  # noqa: N815
-    addStretch = add_stretch  # noqa: N815
-
-    @property
-    def geometryChanged(self) -> QtCore.SignalInstance:
-        """The Qt-style compatibility alias for geometry_changed."""
-        return self.geometry_changed

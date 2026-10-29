@@ -21,7 +21,3 @@ class RuntimeUnavailableError(NativeTitleBarError):
 
 class GUIThreadError(NativeTitleBarError):
     """A GUI operation was attempted without the QApplication GUI thread."""
-
-
-# Retain the original public spelling for existing callers.
-GuiThreadError = GUIThreadError

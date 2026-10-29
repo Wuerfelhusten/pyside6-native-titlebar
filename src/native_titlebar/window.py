@@ -13,6 +13,7 @@ from typing import cast
 from PySide6 import QtCore
 from PySide6 import QtWidgets
 import shiboken6
+import typing_extensions
 
 from native_titlebar import _integration
 from native_titlebar import _qt
@@ -57,7 +58,7 @@ class NativeWindow(QtWidgets.QWidget):
         self._layout.setSpacing(0)
         self.titlebar = titlebar.TitleBar(self)
         self._layout.addWidget(self.titlebar)
-        self.set_central_widget(QtWidgets.QWidget())
+        self.setCentralWidget(QtWidgets.QWidget())
         self._integration = _integration.WindowIntegration(
             self,
             self.titlebar,
@@ -71,12 +72,12 @@ class NativeWindow(QtWidgets.QWidget):
         """Applies the layout before native input regions are calculated."""
         self._layout.activate()
 
-    def set_central_widget(self, widget: QtWidgets.QWidget | None) -> None:
+    def setCentralWidget(self, widget: QtWidgets.QWidget | None) -> None:
         """Replaces the content and schedules the previous widget for deletion.
 
         Args:
             widget: New content owned by this window, or None to remove content.
-                Use take_central_widget() first to preserve previous content.
+                Use takeCentralWidget() first to preserve previous content.
 
         Raises:
             GUIThreadError: If called outside the QApplication GUI thread.
@@ -107,7 +108,7 @@ class NativeWindow(QtWidgets.QWidget):
             self._layout.addWidget(widget, 1)
             widget.show()
 
-    def central_widget(self) -> QtWidgets.QWidget | None:
+    def centralWidget(self) -> QtWidgets.QWidget | None:
         """Returns the current central widget, or None if absent.
 
         Raises:
@@ -124,7 +125,7 @@ class NativeWindow(QtWidgets.QWidget):
         ):
             self._central = None
 
-    def take_central_widget(self) -> QtWidgets.QWidget | None:
+    def takeCentralWidget(self) -> QtWidgets.QWidget | None:
         """Detaches content and transfers ownership to the caller.
 
         Returns:
@@ -158,6 +159,7 @@ class NativeWindow(QtWidgets.QWidget):
         """
         self._integration.set_tall_title_bar(tall)
 
+    @typing_extensions.override
     def event(self, event: QtCore.QEvent) -> bool:
         """Updates native geometry after Qt processes a window event."""
         result = super().event(event)
@@ -165,6 +167,7 @@ class NativeWindow(QtWidgets.QWidget):
             self._integration.handle_event(event)
         return result
 
+    @typing_extensions.override
     def nativeEvent(
         self,
         event_type: QtCore.QByteArray | bytes | bytearray | memoryview,
@@ -199,14 +202,3 @@ class NativeWindow(QtWidgets.QWidget):
     def last_error(self) -> str | None:
         """The last asynchronous error, or None after a successful sync."""
         return self._integration.last_error
-
-    # These aliases preserve the Qt-style API provided by release 0.1.
-    setCentralWidget = set_central_widget  # noqa: N815
-    centralWidget = central_widget  # noqa: N815
-    takeCentralWidget = take_central_widget  # noqa: N815
-    setTallTitleBar = set_tall_title_bar  # noqa: N815
-
-    @property
-    def integrationError(self) -> QtCore.SignalInstance:
-        """The Qt-style compatibility alias for integration_error."""
-        return self.integration_error

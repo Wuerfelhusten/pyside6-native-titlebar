@@ -27,6 +27,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "typing-extensions>=4.5,<5",
   "PySide6==6.8.3; python_version < '3.14'",
   "PySide6==6.12.0; python_version >= '3.14'",
   "winui3-Microsoft.UI.Windowing[all]==3.2.1; sys_platform == 'win32'",
@@ -107,10 +108,10 @@ ignore = [
 "tools/package_smoke.py" = ["T201"]
 
 [tool.ruff.lint.pep8-naming]
-# Qt virtual methods and public signal aliases must keep their binding names.
+# Qt overrides and the matching QWidget content API keep Qt's method names.
 extend-ignore-names = [
-  "paintEvent", "eventFilter", "showEvent", "nativeEvent",
-  "geometryChanged", "integrationError", "setContentsMargins",
+  "paintEvent", "eventFilter", "nativeEvent", "setContentsMargins",
+  "setCentralWidget", "centralWidget", "takeCentralWidget",
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -126,7 +127,9 @@ files = ["src/native_titlebar", "examples", "tests", "tools"]
 strict = true
 disallow_any_unimported = true
 warn_unreachable = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+enable_error_code = [
+  "ignore-without-code", "redundant-expr", "truthy-bool", "explicit-override",
+]
 
 [[tool.mypy.overrides]]
 module = ["native_titlebar.*"]

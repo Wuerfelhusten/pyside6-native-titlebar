@@ -23,12 +23,11 @@ from native_titlebar import reports
 def check_public_types(
     window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
 ) -> None:
-    """Checks public values, nested report fields, and compatibility aliases."""
+    """Checks public values, signals, and nested report fields."""
     assert_type(window.titlebar, native_titlebar.TitleBar)
     assert_type(window.titlebar.widgets, tuple[QtWidgets.QWidget, ...])
     assert_type(window.titlebar.geometry_changed, QtCore.SignalInstance)
     assert_type(window.last_error, str | None)
-    assert_type(window.central_widget(), QtWidgets.QWidget | None)
     assert_type(window.centralWidget(), QtWidgets.QWidget | None)
     assert_type(window.diagnostics(), reports.WindowDiagnostics)
     assert_type(window.diagnostics()["qt_dpr"], float)

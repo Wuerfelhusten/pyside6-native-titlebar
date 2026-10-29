@@ -80,7 +80,7 @@ def main() -> int:
     window.integration_error.connect(status.setText)
     layout.addRow("Status", status)
 
-    window.set_central_widget(content)
+    window.setCentralWidget(content)
     window.resize(1100, 560)
     window.show()
     return application.exec()

@@ -141,7 +141,7 @@ def test_resize_recenters_widget_and_updates_native_input_regions(
     """Checks layout and native hit testing while resizing programmatically."""
     button = QtWidgets.QPushButton("Test")
     button.setFixedWidth(150)
-    window.titlebar.addWidget(button)
+    window.titlebar.add_widget(button)
     clicks = []
     button.clicked.connect(lambda: clicks.append(True))
     for width in (900, 1200, 700):
@@ -168,7 +168,7 @@ def test_line_edit_focus_and_input(
 ) -> None:
     """Checks that a title bar input receives normal Qt focus and key events."""
     edit = QtWidgets.QLineEdit()
-    window.titlebar.addWidget(edit)
+    window.titlebar.add_widget(edit)
     _settle()
     edit.setFocus()
     QtTest.QTest.keyClicks(edit, "native title bar")
@@ -184,7 +184,7 @@ def test_hidden_removed_and_deleted_widgets_no_longer_exclude_drag_area(
 ) -> None:
     """Exercises hide, remove, and deferred Qt destruction on one title bar."""
     button = QtWidgets.QPushButton("Hide me")
-    window.titlebar.addWidget(button)
+    window.titlebar.add_widget(button)
     _settle()
     button.hide()
     _settle()
@@ -192,11 +192,11 @@ def test_hidden_removed_and_deleted_widgets_no_longer_exclude_drag_area(
     button.show()
     _settle()
     assert len(window.diagnostics()["interactive_rectangles_px"]) == 1
-    window.titlebar.removeWidget(button)
+    window.titlebar.remove_widget(button)
     _settle()
     assert not window.diagnostics()["interactive_rectangles_px"]
     second = QtWidgets.QPushButton("Delete me")
-    window.titlebar.addWidget(second)
+    window.titlebar.add_widget(second)
     second.deleteLater()
     QtCore.QCoreApplication.sendPostedEvents(
         None, QtCore.QEvent.Type.DeferredDelete
@@ -264,7 +264,7 @@ def test_palette_matches_native_buttons_and_hover_contrast_after_theme_changes(
 def test_maximize_restore_and_central_widget_ownership(
     window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
 ) -> None:
-    """Checks maximized layout and ownership transfer through the Qt aliases."""
+    """Checks maximized layout and ownership transfer through the Qt API."""
     replacement = QtWidgets.QWidget()
     window.setCentralWidget(replacement)
     window.showMaximized()
@@ -310,7 +310,7 @@ def test_native_resize_defers_region_writes_but_keeps_widgets_centered(
     """Checks that modal resizing defers native updates without freezing Qt."""
     button = QtWidgets.QPushButton("Resize")
     button.setFixedWidth(150)
-    window.titlebar.addWidget(button)
+    window.titlebar.add_widget(button)
     _settle()
     assert window._integration._backend is not None
     previous_regions = window._integration._backend.regions
@@ -353,22 +353,21 @@ def test_native_resize_defers_region_writes_but_keeps_widgets_centered(
     )
 
 
-def test_snake_case_api_and_qt_compatibility_share_ownership(
+def test_removed_titlebar_controls_can_be_reused(
     window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
 ) -> None:
-    """Checks that both public naming conventions operate on the same state."""
+    """Checks that removing and reusing controls preserves Qt ownership."""
     button = QtWidgets.QPushButton("Reusable")
     window.titlebar.add_widget(button)
     _settle()
     assert window.titlebar.widgets == (button,)
-    window.titlebar.removeWidget(button)
+    window.titlebar.remove_widget(button)
     assert button.isHidden()
     assert button.parentWidget() is window.titlebar
-    window.titlebar.addWidget(button)
+    window.titlebar.add_widget(button)
     button.show()
     _settle()
     assert len(window.diagnostics()["interactive_rectangles_px"]) == 1
-    assert window.integrationError is window.integration_error
 
 
 def test_reparented_controls_stop_excluding_native_drag_regions(
@@ -378,7 +377,7 @@ def test_reparented_controls_stop_excluding_native_drag_regions(
     button = QtWidgets.QPushButton("Move")
     window.titlebar.add_widget(button)
     _settle()
-    button.setParent(window.central_widget())
+    button.setParent(window.centralWidget())
     button.show()
     _settle()
     assert not window.titlebar.widgets
@@ -399,7 +398,7 @@ def test_invalid_ownership_does_not_disrupt_existing_widgets(
         with pytest.raises(ValueError, match=message):
             window.titlebar.add_widget(invalid)
     with pytest.raises(ValueError, match="cannot be central widgets"):
-        window.set_central_widget(window.titlebar)
+        window.setCentralWidget(window.titlebar)
     _settle()
     assert window.titlebar.widgets == (button,)
     assert window.last_error is None
@@ -418,7 +417,7 @@ def test_tall_caption_survives_close_and_reopen(
     window.show()
     _settle()
     assert window.titlebar.height() == tall_height
-    window.setTallTitleBar(False)
+    window.set_tall_title_bar(False)
     _settle()
     assert window.titlebar.height() == standard_height
 
@@ -450,15 +449,15 @@ def test_deleted_central_content_can_be_replaced(
     window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
 ) -> None:
     """Checks replacement after Qt has destroyed the previous content widget."""
-    old = window.central_widget()
+    old = window.centralWidget()
     assert old is not None
     old.deleteLater()
     QtCore.QCoreApplication.sendPostedEvents(
         None, QtCore.QEvent.Type.DeferredDelete
     )
-    assert window.central_widget() is None
+    assert window.centralWidget() is None
     replacement = QtWidgets.QWidget()
-    window.set_central_widget(replacement)
+    window.setCentralWidget(replacement)
     _settle()
     assert window.centralWidget() is replacement
 
@@ -636,20 +635,20 @@ class TestMainWindow:
         self,
         window: native_titlebar.NativeMainWindow,
     ) -> None:
-        """Keeps native QMainWindow ownership with both API spellings."""
+        """Keeps native QMainWindow ownership on replacement and removal."""
         original = window.centralWidget()
         assert original is not None
         replacement = QtWidgets.QLabel("New content")
         window.setCentralWidget(replacement)
         _settle()
         assert not shiboken6.isValid(original)
-        window.set_central_widget(replacement)
+        window.setCentralWidget(replacement)
         _settle()
         assert shiboken6.isValid(replacement)
-        assert window.central_widget() is replacement
+        assert window.centralWidget() is replacement
         window.setCentralWidget(None)
         _settle()
         assert not shiboken6.isValid(replacement)
-        assert window.central_widget() is None
-        assert window.take_central_widget() is None
+        assert window.centralWidget() is None
+        assert window.takeCentralWidget() is None
         assert not window.titlebar.isHidden()

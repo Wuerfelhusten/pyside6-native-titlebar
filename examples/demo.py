@@ -66,7 +66,7 @@ def main() -> int:
         search.setPlaceholderText("Search …")
         search.setFixedWidth(220)
         window.titlebar.add_widget(search)
-    window.set_central_widget(QtWidgets.QWidget())
+    window.setCentralWidget(QtWidgets.QWidget())
     window.resize(900, 500)
     window.show()
 

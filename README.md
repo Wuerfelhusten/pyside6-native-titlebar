@@ -33,7 +33,7 @@ def main() -> int:
 
     action = QtWidgets.QPushButton("Action")
     window.titlebar.add_widget(action)
-    window.set_central_widget(QtWidgets.QLabel("Window content"))
+    window.setCentralWidget(QtWidgets.QLabel("Window content"))
     window.resize(1000, 600)
     window.show()
     return app.exec()
@@ -44,6 +44,8 @@ if __name__ == "__main__":
 ```
 
 Use `NativeWindow` for a simple widget window. Use `NativeMainWindow` when your application needs Qt menus, toolbars, dock widgets, or a status bar. Both classes provide the same `titlebar` API.
+
+Both window classes use `setCentralWidget()`, `centralWidget()`, and `takeCentralWidget()` for content. Inherited Qt methods retain their Qt names; library-specific methods and signals use `snake_case`.
 
 ## QMainWindow
 

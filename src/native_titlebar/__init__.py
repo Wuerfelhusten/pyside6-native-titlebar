@@ -18,7 +18,6 @@ from native_titlebar import window
 
 # Keep the package facade while importing modules, as Google style requires.
 GUIThreadError = errors.GUIThreadError
-GuiThreadError = errors.GuiThreadError
 NativeMainWindow = main_window.NativeMainWindow
 NativeTitleBarError = errors.NativeTitleBarError
 NativeWindow = window.NativeWindow
@@ -29,7 +28,6 @@ __version__ = _version.__version__
 
 __all__ = [
     "GUIThreadError",
-    "GuiThreadError",
     "NativeMainWindow",
     "NativeTitleBarError",
     "NativeWindow",
