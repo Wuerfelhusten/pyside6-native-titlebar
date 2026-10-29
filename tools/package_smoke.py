@@ -45,7 +45,7 @@ def main() -> int:
     if not marker.is_file():
         message = "The installed wheel is missing its py.typed marker."
         raise RuntimeError(message)
-    report = diagnostics.environment_report()
+    report = diagnostics.environmentReport()
     if report["runtime_available"] is not None:
         message = "Inspecting package metadata must not bootstrap the runtime."
         raise RuntimeError(message)

@@ -32,7 +32,7 @@ def main() -> int:
     window.setWindowTitle("My application")
 
     action = QtWidgets.QPushButton("Action")
-    window.titlebar.add_widget(action)
+    window.titleBar().addWidget(action)
     window.setCentralWidget(QtWidgets.QLabel("Window content"))
     window.resize(1000, 600)
     window.show()
@@ -43,9 +43,9 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-Use `NativeWindow` for a simple widget window. Use `NativeMainWindow` when your application needs Qt menus, toolbars, dock widgets, or a status bar. Both classes provide the same `titlebar` API.
+Use `NativeWindow` for a simple widget window. Use `NativeMainWindow` when your application needs Qt menus, toolbars, dock widgets, or a status bar. Both classes provide the same `titleBar()` API.
 
-Both window classes use `setCentralWidget()`, `centralWidget()`, and `takeCentralWidget()` for content. Inherited Qt methods retain their Qt names; library-specific methods and signals use `snake_case`.
+Both window classes use `setCentralWidget()`, `centralWidget()`, and `takeCentralWidget()` for content. Public methods and signals follow Qt's `camelCase` convention. Read state through getter methods such as `window.titleBar()`, `window.titleBar().widgets()`, and `window.lastError()`.
 
 ## QMainWindow
 
@@ -70,9 +70,9 @@ The title bar sits above the menu and toolbar areas. Standard methods such as `a
 
 ## Title bar controls
 
-Add controls with `window.titlebar.add_widget(widget)`. They receive normal Qt mouse, keyboard, and focus events. Free space remains available for dragging the window. `remove_widget(widget)` hides a control without deleting it; it stays owned by the title bar until reparented.
+Add controls with `window.titleBar().addWidget(widget)`. They receive normal Qt mouse, keyboard, and focus events. Free space remains available for dragging the window. `removeWidget(widget)` hides a control without deleting it; it stays owned by the title bar until reparented.
 
-Use `setWindowTitle()` and `setWindowIcon()` to update the caption, `window.titlebar.set_title_visible(False)` or `set_icon_visible(False)` to hide either element, and `window.set_tall_title_bar(True)` for a taller caption area. Button colors follow `QPalette.Window` and `QPalette.WindowText`; Windows controls the close-button hover color.
+Use `setWindowTitle()` and `setWindowIcon()` to update the caption, `window.titleBar().setTitleVisible(False)` or `setIconVisible(False)` to hide either element, and `window.setTallTitleBar(True)` for a taller caption area. Button colors follow `QPalette.Window` and `QPalette.WindowText`; Windows controls the close-button hover color.
 
 Create and modify widgets on the QApplication GUI thread. Keep the standard window frame enabled; do not combine the library with frameless flags or another title bar integration. API details and ownership rules are documented in the docstrings.
 
@@ -98,7 +98,7 @@ python -m native_titlebar
 python -m native_titlebar --json
 ```
 
-Window creation raises a `NativeTitleBarError` subclass if initialization fails. Later integration errors are logged and emitted through `window.integration_error`. Use `window.diagnostics()` for a structured snapshot of native geometry and the last error. Report problems through [GitHub Issues](https://github.com/Wuerfelhusten/pyside6-native-titlebar/issues).
+Window creation raises a `NativeTitleBarError` subclass if initialization fails. Later integration errors are logged and emitted through `window.integrationError`. Use `window.diagnostics()` for a structured snapshot of native geometry and the last error. Report problems through [GitHub Issues](https://github.com/Wuerfelhusten/pyside6-native-titlebar/issues).
 
 ## License
 

@@ -34,8 +34,8 @@ def test_environment_report_does_not_initialize_runtime(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Checks that reporting versions has no native-runtime side effects."""
-    monkeypatch.setattr(windows, "ensure_runtime", _unexpected_bootstrap)
-    report = diagnostics.environment_report()
+    monkeypatch.setattr(windows, "ensureRuntime", _unexpected_bootstrap)
+    report = diagnostics.environmentReport()
     assert report["runtime_available"] is None
     assert report["library"] == native_titlebar.__version__
     assert json.loads(json.dumps(report)) == report
@@ -47,14 +47,14 @@ def test_unsupported_platform_raises_specific_public_error(
     """Checks the public error type when Windows APIs are unavailable."""
     monkeypatch.setattr(sys, "platform", "linux")
     with pytest.raises(native_titlebar.UnsupportedPlatformError):
-        windows.ensure_runtime()
+        windows.ensureRuntime()
 
 
 def test_cli_returns_failure_and_actionable_json(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Checks the failure exit code and machine-readable recovery message."""
-    monkeypatch.setattr(windows, "ensure_runtime", _missing_runtime)
+    monkeypatch.setattr(windows, "ensureRuntime", _missing_runtime)
     assert __main__.main(["--json"]) == 1
     report = json.loads(capsys.readouterr().out)
     assert report["runtime_available"] is False

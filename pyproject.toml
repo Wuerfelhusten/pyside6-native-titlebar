@@ -108,10 +108,15 @@ ignore = [
 "tools/package_smoke.py" = ["T201"]
 
 [tool.ruff.lint.pep8-naming]
-# Qt overrides and the matching QWidget content API keep Qt's method names.
+# The public API follows Qt's camelCase method and signal names.
 extend-ignore-names = [
   "paintEvent", "eventFilter", "nativeEvent", "setContentsMargins",
   "setCentralWidget", "centralWidget", "takeCentralWidget",
+  "titleBar", "lastError", "setTallTitleBar", "integrationError",
+  "addWidget", "removeWidget", "addStretch", "setTitleVisible",
+  "setIconVisible", "setNativeMetrics", "interactiveRectangles",
+  "geometryChanged", "environmentReport", "physicalRect", "dragRectangles",
+  "ensureRuntime", "setRegions", "setPalette", "setTall",
 ]
 
 [tool.ruff.lint.pydocstyle]

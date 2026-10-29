@@ -54,7 +54,7 @@ class WindowIntegration:
             report_error: Emits asynchronous failures through the host signal.
         """
         self._window = window
-        self.titlebar = bar
+        self._titlebar = bar
         self._update_layout = update_layout
         self._report_error = report_error
         self._backend: windows.WindowsTitleBar | None = None
@@ -66,7 +66,7 @@ class WindowIntegration:
         self._timer = QtCore.QTimer(window)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self.sync_safely)
-        bar.geometry_changed.connect(self._schedule_sync)
+        bar.geometryChanged.connect(self._schedule_sync)
 
     def attach(self) -> None:
         """Attaches to the current HWND and reconnects screen notifications."""
@@ -84,7 +84,7 @@ class WindowIntegration:
         except (ImportError, OSError) as exc:
             msg = f"Cannot attach native title bar to HWND {hwnd}: {exc}"
             raise errors.NativeTitleBarError(msg) from exc
-        self._backend.set_tall(tall=self._tall_titlebar)
+        self._backend.setTall(tall=self._tall_titlebar)
         self._in_move_size = False
         backend = self._backend
         self._window.destroyed.connect(backend.close)
@@ -113,7 +113,7 @@ class WindowIntegration:
         _qt.require_gui_thread()
         self._tall_titlebar = tall
         if self._backend is not None and self._backend.native is not None:
-            self._backend.set_tall(tall=tall)
+            self._backend.setTall(tall=tall)
         self._schedule_sync()
 
     def _schedule_sync(self, *_: object) -> None:
@@ -155,18 +155,18 @@ class WindowIntegration:
             height, left, right, width = self._backend.metrics()
             scale = self._window.devicePixelRatioF()
             if height <= 0 or self._window.isFullScreen():
-                self.titlebar.hide()
+                self._titlebar.hide()
                 self._update_layout()
-                self._backend.set_regions([])
+                self._backend.setRegions([])
                 return
-            self.titlebar.show()
-            self.titlebar.set_native_metrics(height, left, right, scale)
+            self._titlebar.show()
+            self._titlebar.setNativeMetrics(height, left, right, scale)
             self._update_layout()
             bounds = geometry.Rect(
                 left, 0, max(0, width - left - right), height
             )
-            regions = geometry.drag_rectangles(
-                bounds, self.titlebar.interactive_rectangles(scale)
+            regions = geometry.dragRectangles(
+                bounds, self._titlebar.interactiveRectangles(scale)
             )
             # Windows holds the mouse capture during its modal move/size loop.
             # Qt can relayout continuously, but rewriting SDK drag regions here
@@ -174,8 +174,8 @@ class WindowIntegration:
             # Commit the final hit areas after WM_EXITSIZEMOVE, before the next
             # interaction. Programmatic resize stays live.
             if not self._in_move_size:
-                self._backend.set_regions(regions)
-            self._backend.set_palette(self.titlebar.palette())
+                self._backend.setRegions(regions)
+            self._backend.setPalette(self._titlebar.palette())
         finally:
             self._syncing = False
 
@@ -188,7 +188,7 @@ class WindowIntegration:
             QtCore.QEvent.Type.WindowIconChange,
             QtCore.QEvent.Type.ActivationChange,
         ):
-            self.titlebar.update()
+            self._titlebar.update()
         if event.type() in (
             QtCore.QEvent.Type.WinIdChange,
             QtCore.QEvent.Type.Resize,
@@ -256,12 +256,12 @@ class WindowIntegration:
             qt_dpr=self._window.devicePixelRatioF(),
             titlebar_height_px=height,
             insets_px=[left, right],
-            drag_rectangles_px=list(self._backend.regions),
+            drag_rectangles_px=list(self._backend.regions()),
             interactive_rectangles_px=[
                 reports.RectangleInfo(
                     x=rect.x, y=rect.y, width=rect.width, height=rect.height
                 )
-                for rect in self.titlebar.interactive_rectangles(
+                for rect in self._titlebar.interactiveRectangles(
                     self._window.devicePixelRatioF()
                 )
             ],
@@ -269,7 +269,6 @@ class WindowIntegration:
             in_native_move_size=self._in_move_size,
         )
 
-    @property
     def last_error(self) -> str | None:
-        """The last asynchronous error, or None after a successful sync."""
+        """Returns the last integration error, or None after recovery."""
         return self._last_error

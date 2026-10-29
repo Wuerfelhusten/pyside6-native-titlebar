@@ -41,7 +41,7 @@ _runtime: Callable[[], None] | None = None
 _backends: weakref.WeakSet[WindowsTitleBar] = weakref.WeakSet()
 
 
-def ensure_runtime() -> None:
+def ensureRuntime() -> None:
     """Bootstraps the pinned Windows App Runtime once per process.
 
     Raises:
@@ -110,7 +110,7 @@ class WindowsTitleBar:
         Raises:
             NativeTitleBarError: If runtime loading or customization fails.
         """
-        ensure_runtime()
+        ensureRuntime()
         from winui3.microsoft.ui import interop
         from winui3.microsoft.ui import windowing
 
@@ -146,9 +146,8 @@ class WindowsTitleBar:
         _backends.add(self)
         _logger.info("Attached AppWindow to existing Qt HWND=%s", hwnd)
 
-    @property
     def regions(self) -> tuple[tuple[int, int, int, int], ...]:
-        """The last committed physical drag rectangles."""
+        """Returns the last committed physical drag rectangles."""
         return self._regions or ()
 
     def metrics(self) -> tuple[int, int, int, int]:
@@ -180,7 +179,7 @@ class WindowsTitleBar:
             raise errors.NativeTitleBarError(message)
         return bar
 
-    def set_regions(self, rectangles: Sequence[geometry.Rect]) -> None:
+    def setRegions(self, rectangles: Sequence[geometry.Rect]) -> None:
         """Updates drag regions when their physical rectangles change.
 
         Args:
@@ -201,7 +200,7 @@ class WindowsTitleBar:
         self._regions = values
         _logger.debug("HWND=%s drag rectangles=%s", self.hwnd, values)
 
-    def set_palette(self, palette: QtGui.QPalette) -> None:
+    def setPalette(self, palette: QtGui.QPalette) -> None:
         """Synchronizes all native caption button states with the Qt palette.
 
         Args:
@@ -285,7 +284,7 @@ class WindowsTitleBar:
         ]
         self._colors = values
 
-    def set_tall(self, *, tall: bool) -> None:
+    def setTall(self, *, tall: bool) -> None:
         """Selects the SDK standard or tall caption height.
 
         Args:

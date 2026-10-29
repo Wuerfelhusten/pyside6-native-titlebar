@@ -19,7 +19,7 @@ from native_titlebar import reports
 from native_titlebar.platform import windows
 
 
-def environment_report(
+def environmentReport(
     *, check_runtime: bool = False
 ) -> reports.EnvironmentReport:
     """Collects JSON-safe package, OS, and runtime information.
@@ -46,7 +46,7 @@ def environment_report(
     }
     if check_runtime:
         try:
-            windows.ensure_runtime()
+            windows.ensureRuntime()
         except errors.NativeTitleBarError as exc:
             report["runtime_available"] = False
             report["error"] = str(exc)

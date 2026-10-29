@@ -31,12 +31,11 @@ class NativeMainWindow(QtWidgets.QMainWindow):
     margin, leaving Qt's main-window layout and ownership rules intact.
 
     Attributes:
-        titlebar: Owned TitleBar used to add interactive controls.
-        integration_error: Signal carrying a message for asynchronous failures.
+        integrationError: Signal carrying a message for asynchronous failures.
             Constructor failures instead raise NativeTitleBarError directly.
     """
 
-    integration_error = QtCore.Signal(str)
+    integrationError = QtCore.Signal(str)
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         """Creates a top-level main window and attaches its native title bar.
@@ -51,24 +50,35 @@ class NativeMainWindow(QtWidgets.QMainWindow):
             NativeTitleBarError: If native attachment fails.
         """
         _qt.require_gui_thread()
-        windows.ensure_runtime()
+        windows.ensureRuntime()
         self._ready = False
         self._content_margins = QtCore.QMargins()
         super().__init__(parent, QtCore.Qt.WindowType.Window)
-        self.titlebar = titlebar.TitleBar(self)
+        self._titlebar = titlebar.TitleBar(self)
         self.setCentralWidget(QtWidgets.QWidget())
         self._integration = _integration.WindowIntegration(
             self,
-            self.titlebar,
+            self._titlebar,
             self._update_titlebar_layout,
-            self.integration_error.emit,
+            self.integrationError.emit,
         )
         self._ready = True
         self._integration.attach()
 
+    def titleBar(self) -> titlebar.TitleBar:
+        """Returns the title bar owned by this window.
+
+        Use its addWidget() and removeWidget() methods to manage controls.
+
+        Raises:
+            GUIThreadError: If called outside the QApplication GUI thread.
+        """
+        _qt.require_gui_thread()
+        return self._titlebar
+
     def _update_titlebar_layout(self) -> None:
         """Reserves caption space above Qt's complete main-window layout."""
-        height = 0 if self.titlebar.isHidden() else self.titlebar.height()
+        height = 0 if self._titlebar.isHidden() else self._titlebar.height()
         margins = self._content_margins
         super().setContentsMargins(
             margins.left(),
@@ -76,12 +86,12 @@ class NativeMainWindow(QtWidgets.QMainWindow):
             margins.right(),
             margins.bottom(),
         )
-        self.titlebar.setGeometry(0, 0, self.width(), height)
-        self.titlebar.raise_()
+        self._titlebar.setGeometry(0, 0, self.width(), height)
+        self._titlebar.raise_()
         layout = self.layout()
         if layout is not None:
             layout.activate()
-        bar_layout = self.titlebar.layout()
+        bar_layout = self._titlebar.layout()
         if bar_layout is not None:
             bar_layout.activate()
 
@@ -155,7 +165,7 @@ class NativeMainWindow(QtWidgets.QMainWindow):
             if widget is self or widget.isAncestorOf(self):
                 msg = "Central content cannot be the window or an ancestor."
                 raise ValueError(msg)
-            if widget is self.titlebar:
+            if widget is self._titlebar:
                 msg = "The window and title bar cannot be central widgets"
                 raise ValueError(msg)
         if widget is None:
@@ -167,7 +177,7 @@ class NativeMainWindow(QtWidgets.QMainWindow):
             super().setCentralWidget(widget)
 
     # Qt's toggled(bool) signal passes its value positionally.
-    def set_tall_title_bar(
+    def setTallTitleBar(
         self,
         tall: bool = True,  # noqa: FBT001, FBT002
     ) -> None:
@@ -222,7 +232,6 @@ class NativeMainWindow(QtWidgets.QMainWindow):
         """
         return self._integration.diagnostics()
 
-    @property
-    def last_error(self) -> str | None:
-        """The last asynchronous error, or None after a successful sync."""
-        return self._integration.last_error
+    def lastError(self) -> str | None:
+        """Returns the last integration error, or None after recovery."""
+        return self._integration.last_error()

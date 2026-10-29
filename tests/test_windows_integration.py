@@ -141,7 +141,7 @@ def test_resize_recenters_widget_and_updates_native_input_regions(
     """Checks layout and native hit testing while resizing programmatically."""
     button = QtWidgets.QPushButton("Test")
     button.setFixedWidth(150)
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     clicks = []
     button.clicked.connect(lambda: clicks.append(True))
     for width in (900, 1200, 700):
@@ -168,7 +168,7 @@ def test_line_edit_focus_and_input(
 ) -> None:
     """Checks that a title bar input receives normal Qt focus and key events."""
     edit = QtWidgets.QLineEdit()
-    window.titlebar.add_widget(edit)
+    window.titleBar().addWidget(edit)
     _settle()
     edit.setFocus()
     QtTest.QTest.keyClicks(edit, "native title bar")
@@ -184,7 +184,7 @@ def test_hidden_removed_and_deleted_widgets_no_longer_exclude_drag_area(
 ) -> None:
     """Exercises hide, remove, and deferred Qt destruction on one title bar."""
     button = QtWidgets.QPushButton("Hide me")
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     _settle()
     button.hide()
     _settle()
@@ -192,11 +192,11 @@ def test_hidden_removed_and_deleted_widgets_no_longer_exclude_drag_area(
     button.show()
     _settle()
     assert len(window.diagnostics()["interactive_rectangles_px"]) == 1
-    window.titlebar.remove_widget(button)
+    window.titleBar().removeWidget(button)
     _settle()
     assert not window.diagnostics()["interactive_rectangles_px"]
     second = QtWidgets.QPushButton("Delete me")
-    window.titlebar.add_widget(second)
+    window.titleBar().addWidget(second)
     second.deleteLater()
     QtCore.QCoreApplication.sendPostedEvents(
         None, QtCore.QEvent.Type.DeferredDelete
@@ -270,7 +270,7 @@ def test_maximize_restore_and_central_widget_ownership(
     window.showMaximized()
     _settle()
     assert window.isMaximized()
-    assert replacement.geometry().top() == window.titlebar.height()
+    assert replacement.geometry().top() == window.titleBar().height()
     assert replacement.geometry().bottom() == window.height() - 1
     window.showNormal()
     _settle()
@@ -310,19 +310,19 @@ def test_native_resize_defers_region_writes_but_keeps_widgets_centered(
     """Checks that modal resizing defers native updates without freezing Qt."""
     button = QtWidgets.QPushButton("Resize")
     button.setFixedWidth(150)
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     _settle()
     assert window._integration._backend is not None
-    previous_regions = window._integration._backend.regions
+    previous_regions = window._integration._backend.regions()
     writes = []
-    original = window._integration._backend.set_regions
+    original = window._integration._backend.setRegions
 
     def record(regions: Sequence[geometry.Rect]) -> None:
         """Records native updates while preserving their original behavior."""
         writes.append(regions)
         original(regions)
 
-    monkeypatch.setattr(window._integration._backend, "set_regions", record)
+    monkeypatch.setattr(window._integration._backend, "setRegions", record)
     message = wintypes.MSG()
     message.hWnd = int(window.winId())
     message.message = 0x0231
@@ -337,7 +337,7 @@ def test_native_resize_defers_region_writes_but_keeps_widgets_centered(
         _settle()
         assert abs(button.geometry().center().x() - window.width() / 2) <= 1
     assert not writes
-    assert window._integration._backend.regions == previous_regions
+    assert window._integration._backend.regions() == previous_regions
     message.message = 0x0232
     window.nativeEvent(
         QtCore.QByteArray(b"windows_generic_MSG"),
@@ -346,7 +346,7 @@ def test_native_resize_defers_region_writes_but_keeps_widgets_centered(
     _settle()
     assert not window.diagnostics()["in_native_move_size"]
     assert writes
-    assert window._integration._backend.regions != previous_regions
+    assert window._integration._backend.regions() != previous_regions
     rect = window.diagnostics()["interactive_rectangles_px"][0]
     assert (
         _hit_test(window, rect["x"] + rect["width"] // 2, rect["y"] + 10) == 1
@@ -358,13 +358,13 @@ def test_removed_titlebar_controls_can_be_reused(
 ) -> None:
     """Checks that removing and reusing controls preserves Qt ownership."""
     button = QtWidgets.QPushButton("Reusable")
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     _settle()
-    assert window.titlebar.widgets == (button,)
-    window.titlebar.remove_widget(button)
+    assert window.titleBar().widgets() == (button,)
+    window.titleBar().removeWidget(button)
     assert button.isHidden()
-    assert button.parentWidget() is window.titlebar
-    window.titlebar.add_widget(button)
+    assert button.parentWidget() is window.titleBar()
+    window.titleBar().addWidget(button)
     button.show()
     _settle()
     assert len(window.diagnostics()["interactive_rectangles_px"]) == 1
@@ -375,12 +375,12 @@ def test_reparented_controls_stop_excluding_native_drag_regions(
 ) -> None:
     """Checks that moving a control out of the title bar restores dragging."""
     button = QtWidgets.QPushButton("Move")
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     _settle()
     button.setParent(window.centralWidget())
     button.show()
     _settle()
-    assert not window.titlebar.widgets
+    assert not window.titleBar().widgets()
     assert not window.diagnostics()["interactive_rectangles_px"]
 
 
@@ -389,37 +389,37 @@ def test_invalid_ownership_does_not_disrupt_existing_widgets(
 ) -> None:
     """Checks rejection of cycles and duplicate ownership without data loss."""
     button = QtWidgets.QPushButton("Keep")
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     for invalid, message in (
         (window, "cannot contain itself or an ancestor"),
-        (window.titlebar, "cannot contain itself or an ancestor"),
+        (window.titleBar(), "cannot contain itself or an ancestor"),
         (button, "already in this title bar"),
     ):
         with pytest.raises(ValueError, match=message):
-            window.titlebar.add_widget(invalid)
+            window.titleBar().addWidget(invalid)
     with pytest.raises(ValueError, match="cannot be central widgets"):
-        window.setCentralWidget(window.titlebar)
+        window.setCentralWidget(window.titleBar())
     _settle()
-    assert window.titlebar.widgets == (button,)
-    assert window.last_error is None
+    assert window.titleBar().widgets() == (button,)
+    assert window.lastError() is None
 
 
 def test_tall_caption_survives_close_and_reopen(
     window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
 ) -> None:
     """Uses actual SDK metrics before and after reopening the native window."""
-    standard_height = window.titlebar.height()
-    window.set_tall_title_bar()
+    standard_height = window.titleBar().height()
+    window.setTallTitleBar()
     _settle()
-    tall_height = window.titlebar.height()
+    tall_height = window.titleBar().height()
     assert tall_height > standard_height
     window.close()
     window.show()
     _settle()
-    assert window.titlebar.height() == tall_height
-    window.set_tall_title_bar(False)
+    assert window.titleBar().height() == tall_height
+    window.setTallTitleBar(False)
     _settle()
-    assert window.titlebar.height() == standard_height
+    assert window.titleBar().height() == standard_height
 
 
 def test_widget_mutation_from_worker_thread_is_rejected(
@@ -432,7 +432,7 @@ def test_widget_mutation_from_worker_thread_is_rejected(
     def mutate() -> None:
         """Attempts a forbidden mutation and records the public exception."""
         try:
-            window.titlebar.add_widget(button)
+            window.titleBar().addWidget(button)
         except native_titlebar.GUIThreadError as exc:
             failures.append(str(exc))
 
@@ -441,7 +441,7 @@ def test_widget_mutation_from_worker_thread_is_rejected(
     worker.join(timeout=5)
     assert not worker.is_alive()
     assert len(failures) == 1
-    assert not window.titlebar.widgets
+    assert not window.titleBar().widgets()
     button.deleteLater()
 
 
@@ -467,14 +467,14 @@ def test_fullscreen_restores_titlebar_and_input_regions(
 ) -> None:
     """Checks title bar visibility and hit testing after leaving full screen."""
     button = QtWidgets.QPushButton("Restore")
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     window.showFullScreen()
     _settle()
-    assert window.titlebar.isHidden()
+    assert window.titleBar().isHidden()
     assert not window.diagnostics()["drag_rectangles_px"]
     window.showNormal()
     _settle()
-    assert not window.titlebar.isHidden()
+    assert not window.titleBar().isHidden()
     rect = window.diagnostics()["interactive_rectangles_px"][0]
     assert (
         _hit_test(window, rect["x"] + rect["width"] // 2, rect["y"] + 10) == 1
@@ -487,19 +487,19 @@ def test_async_failure_is_signaled_and_cleared_after_recovery(
 ) -> None:
     """Injects an OSError at the Qt/WinRT boundary and then restores it."""
     failures: list[str] = []
-    window.integration_error.connect(failures.append)
+    window.integrationError.connect(failures.append)
     assert window._integration._backend is not None
-    original = window._integration._backend.set_palette
+    original = window._integration._backend.setPalette
 
     monkeypatch.setattr(
-        window._integration._backend, "set_palette", _fail_palette
+        window._integration._backend, "setPalette", _fail_palette
     )
     window._integration.sync_safely()
-    assert window.last_error == "simulated native failure"
-    assert failures == [window.last_error]
-    monkeypatch.setattr(window._integration._backend, "set_palette", original)
+    assert window.lastError() == "simulated native failure"
+    assert failures == [window.lastError()]
+    monkeypatch.setattr(window._integration._backend, "setPalette", original)
     window._integration.sync_safely()
-    assert window.last_error is None
+    assert window.lastError() is None
 
 
 @pytest.mark.parametrize(
@@ -533,26 +533,26 @@ class TestMainWindow:
         for width in (900, 1200, 700):
             window.resize(width, 500)
             _settle()
-            assert window.titlebar.geometry() == QtCore.QRect(
+            assert window.titleBar().geometry() == QtCore.QRect(
                 0,
                 0,
                 window.width(),
-                window.titlebar.height(),
+                window.titleBar().height(),
             )
             for widget in (window.menuBar(), toolbar, dock, editor, status):
-                assert widget.geometry().top() >= window.titlebar.height()
+                assert widget.geometry().top() >= window.titleBar().height()
             assert editor.y() >= toolbar.geometry().bottom()
             assert editor.geometry().bottom() < status.y()
         action.trigger()
         assert editor.toPlainText() == "Action works"
-        assert window.last_error is None
+        assert window.lastError() is None
 
     def test_menu_replacement_keeps_titlebar(
         self,
         window: native_titlebar.NativeMainWindow,
     ) -> None:
         """Allows standard and custom menus without replacing captions."""
-        original_titlebar = window.titlebar
+        original_titlebar = window.titleBar()
         menu = QtWidgets.QMenuBar()
         menu.addMenu("File")
         window.setMenuBar(menu)
@@ -563,14 +563,14 @@ class TestMainWindow:
         window.setMenuWidget(custom)
         _settle()
         assert window.menuWidget() is custom
-        assert custom.y() == window.titlebar.height()
-        assert window.titlebar is original_titlebar
-        assert not window.titlebar.isHidden()
+        assert custom.y() == window.titleBar().height()
+        assert window.titleBar() is original_titlebar
+        assert not window.titleBar().isHidden()
         replacement = window.menuBar()
         replacement.addMenu("Edit")
         _settle()
         assert window.menuWidget() is replacement
-        assert replacement.y() == window.titlebar.height()
+        assert replacement.y() == window.titleBar().height()
         assert window.diagnostics()["last_error"] is None
 
     def test_dock_and_toolbar_state_round_trip(
@@ -600,8 +600,8 @@ class TestMainWindow:
         assert (
             window.toolBarArea(toolbar) == QtCore.Qt.ToolBarArea.TopToolBarArea
         )
-        assert dock.y() >= window.titlebar.height()
-        assert window.last_error is None
+        assert dock.y() >= window.titleBar().height()
+        assert window.lastError() is None
 
     def test_custom_margins_survive_caption_and_fullscreen_changes(
         self,
@@ -611,9 +611,9 @@ class TestMainWindow:
         window.setContentsMargins(5, 7, 9, 11)
         window.setContentsMargins(QtCore.QMargins(5, 7, 9, 11))
         for tall in (True, False):
-            window.set_tall_title_bar(tall)
+            window.setTallTitleBar(tall)
             _settle()
-            height = window.titlebar.height()
+            height = window.titleBar().height()
             assert window.contentsMargins() == QtCore.QMargins(
                 5,
                 7 + height,
@@ -629,7 +629,7 @@ class TestMainWindow:
             window.showNormal()
             _settle()
             assert window.contentsMargins().top() == height + 7
-            assert window.titlebar.y() == 0
+            assert window.titleBar().y() == 0
 
     def test_central_replacement_and_removal_delete_previous_content(
         self,
@@ -651,4 +651,4 @@ class TestMainWindow:
         assert not shiboken6.isValid(replacement)
         assert window.centralWidget() is None
         assert window.takeCentralWidget() is None
-        assert not window.titlebar.isHidden()
+        assert not window.titleBar().isHidden()

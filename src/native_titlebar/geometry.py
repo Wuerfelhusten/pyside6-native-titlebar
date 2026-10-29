@@ -33,14 +33,12 @@ class Rect:
             msg = "Rectangle dimensions must be nonnegative."
             raise ValueError(msg)
 
-    @property
     def right(self) -> int:
-        """The exclusive right edge."""
+        """Returns the exclusive right edge."""
         return self.x + self.width
 
-    @property
     def bottom(self) -> int:
-        """The exclusive bottom edge."""
+        """Returns the exclusive bottom edge."""
         return self.y + self.height
 
     def subtract(self, other: "Rect") -> list["Rect"]:
@@ -55,20 +53,20 @@ class Rect:
         if self.width == 0 or self.height == 0:
             return []
         left, top = max(self.x, other.x), max(self.y, other.y)
-        right = min(self.right, other.right)
-        bottom = min(self.bottom, other.bottom)
+        right = min(self.right(), other.right())
+        bottom = min(self.bottom(), other.bottom())
         if right <= left or bottom <= top:
             return [self]
         pieces = [
             Rect(self.x, self.y, self.width, top - self.y),
-            Rect(self.x, bottom, self.width, self.bottom - bottom),
+            Rect(self.x, bottom, self.width, self.bottom() - bottom),
             Rect(self.x, top, left - self.x, bottom - top),
-            Rect(right, top, self.right - right, bottom - top),
+            Rect(right, top, self.right() - right, bottom - top),
         ]
         return [piece for piece in pieces if piece.width and piece.height]
 
 
-def physical_rect(
+def physicalRect(
     x: float, y: float, width: float, height: float, scale: float
 ) -> Rect:
     """Rounds a logical exclusion outward to protect fractional-DPI edges.
@@ -102,7 +100,7 @@ def physical_rect(
     )
 
 
-def drag_rectangles(bounds: Rect, exclusions: Iterable[Rect]) -> list[Rect]:
+def dragRectangles(bounds: Rect, exclusions: Iterable[Rect]) -> list[Rect]:
     """Subtracts interactive controls from the available title bar area.
 
     Args:

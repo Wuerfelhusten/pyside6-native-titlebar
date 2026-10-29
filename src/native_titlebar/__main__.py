@@ -31,7 +31,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--version", action="version", version=_version.__version__
     )
     args = parser.parse_args(argv)
-    report = diagnostics.environment_report(check_runtime=True)
+    report = diagnostics.environmentReport(check_runtime=True)
     if args.json:
         print(json.dumps(report, indent=2))
     else:

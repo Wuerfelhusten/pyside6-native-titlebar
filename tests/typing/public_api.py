@@ -24,10 +24,10 @@ def check_public_types(
     window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
 ) -> None:
     """Checks public values, signals, and nested report fields."""
-    assert_type(window.titlebar, native_titlebar.TitleBar)
-    assert_type(window.titlebar.widgets, tuple[QtWidgets.QWidget, ...])
-    assert_type(window.titlebar.geometry_changed, QtCore.SignalInstance)
-    assert_type(window.last_error, str | None)
+    assert_type(window.titleBar(), native_titlebar.TitleBar)
+    assert_type(window.titleBar().widgets(), tuple[QtWidgets.QWidget, ...])
+    assert_type(window.titleBar().geometryChanged, QtCore.SignalInstance)
+    assert_type(window.lastError(), str | None)
     assert_type(window.centralWidget(), QtWidgets.QWidget | None)
     assert_type(window.diagnostics(), reports.WindowDiagnostics)
     assert_type(window.diagnostics()["qt_dpr"], float)
@@ -35,14 +35,14 @@ def check_public_types(
     assert_type(
         window.diagnostics()["interactive_rectangles_px"][0]["width"], int
     )
-    assert_type(diagnostics.environment_report(), reports.EnvironmentReport)
+    assert_type(diagnostics.environmentReport(), reports.EnvironmentReport)
     assert_type(
-        diagnostics.environment_report()["runtime_available"], bool | None
+        diagnostics.environmentReport()["runtime_available"], bool | None
     )
 
     # These negative contracts are never executed; mypy must reject each one.
-    window.titlebar.add_widget("not a widget")  # type: ignore[arg-type]
-    window.set_tall_title_bar("tall")  # type: ignore[arg-type]
+    window.titleBar().addWidget("not a widget")  # type: ignore[arg-type]
+    window.setTallTitleBar("tall")  # type: ignore[arg-type]
     snapshot = window.diagnostics()
     snapshot["qt_dpr"] = "not a number"  # type: ignore[typeddict-item]
 

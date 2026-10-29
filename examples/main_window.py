@@ -65,7 +65,7 @@ class EditorWindow(native_titlebar.NativeMainWindow):
         search.setClearButtonEnabled(True)
         search.setFixedWidth(220)
         search.returnPressed.connect(lambda: self._find_text(search.text()))
-        self.titlebar.add_widget(search)
+        self.titleBar().addWidget(search)
         self.statusBar().showMessage("Ready")
         self.resize(1000, 650)
 

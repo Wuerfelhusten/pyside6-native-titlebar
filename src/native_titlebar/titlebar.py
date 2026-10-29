@@ -23,15 +23,15 @@ from native_titlebar import geometry
 class TitleBar(QtWidgets.QWidget):
     """A title bar with real Qt controls and optional window icon/title.
 
-    Obtain this widget from NativeWindow.titlebar or NativeMainWindow.titlebar.
+    Obtain this widget by calling titleBar() on either native window class.
     Each registered widget and its descendants receive normal Qt input.
     Unoccupied space remains available for native window dragging.
 
     Attributes:
-        geometry_changed: Emitted when native input regions need recalculation.
+        geometryChanged: Emitted when native input regions need recalculation.
     """
 
-    geometry_changed = QtCore.Signal()
+    geometryChanged = QtCore.Signal()
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         """Creates the Qt title bar content on the GUI thread.
@@ -58,9 +58,12 @@ class TitleBar(QtWidgets.QWidget):
         self.setFixedHeight(32)
         self._layout.setContentsMargins(150, 3, 150, 3)
 
-    @property
     def widgets(self) -> tuple[QtWidgets.QWidget, ...]:
-        """The registered, live controls still parented to this title bar."""
+        """Returns registered, live controls still parented to this title bar.
+
+        Raises:
+            GUIThreadError: If called outside the QApplication GUI thread.
+        """
         _qt.require_gui_thread()
         self._widgets = [
             widget
@@ -69,7 +72,7 @@ class TitleBar(QtWidgets.QWidget):
         ]
         return tuple(self._widgets)
 
-    def add_widget(
+    def addWidget(
         self,
         widget: QtWidgets.QWidget,
         stretch: int = 0,
@@ -96,7 +99,7 @@ class TitleBar(QtWidgets.QWidget):
         if widget is self or widget.isAncestorOf(self):
             msg = "A title bar cannot contain itself or an ancestor."
             raise ValueError(msg)
-        if widget in self.widgets:
+        if widget in self.widgets():
             msg = "Widget is already in this title bar."
             raise ValueError(msg)
         if stretch < 0:
@@ -109,9 +112,9 @@ class TitleBar(QtWidgets.QWidget):
             QtCore.Qt.AlignmentFlag(0) if alignment is None else alignment,
         )
         widget.installEventFilter(self)
-        self.geometry_changed.emit()
+        self.geometryChanged.emit()
 
-    def remove_widget(self, widget: QtWidgets.QWidget) -> None:
+    def removeWidget(self, widget: QtWidgets.QWidget) -> None:
         """Removes and hides a control without deleting it.
 
         Args:
@@ -123,17 +126,17 @@ class TitleBar(QtWidgets.QWidget):
             ValueError: If widget is not currently registered.
         """
         _qt.require_gui_thread()
-        if widget not in self.widgets:
+        if widget not in self.widgets():
             msg = "Widget is not registered in this title bar."
             raise ValueError(msg)
         self._widgets.remove(widget)
         self._layout.removeWidget(widget)
         widget.removeEventFilter(self)
         widget.hide()
-        self.geometry_changed.emit()
+        self.geometryChanged.emit()
         self.update()
 
-    def add_stretch(self, stretch: int = 1) -> None:
+    def addStretch(self, stretch: int = 1) -> None:
         """Adds draggable flexible space to the layout.
 
         Args:
@@ -148,10 +151,10 @@ class TitleBar(QtWidgets.QWidget):
             msg = "stretch must be nonnegative."
             raise ValueError(msg)
         self._layout.addStretch(stretch)
-        self.geometry_changed.emit()
+        self.geometryChanged.emit()
 
     # Qt's toggled(bool) signal passes its value positionally.
-    def set_title_visible(self, visible: bool) -> None:  # noqa: FBT001
+    def setTitleVisible(self, visible: bool) -> None:  # noqa: FBT001
         """Shows or hides the painted title, without changing windowTitle().
 
         Args:
@@ -165,7 +168,7 @@ class TitleBar(QtWidgets.QWidget):
         self.update()
 
     # Qt's toggled(bool) signal passes its value positionally.
-    def set_icon_visible(self, visible: bool) -> None:  # noqa: FBT001
+    def setIconVisible(self, visible: bool) -> None:  # noqa: FBT001
         """Shows or hides the painted icon, without changing windowIcon().
 
         Args:
@@ -178,7 +181,7 @@ class TitleBar(QtWidgets.QWidget):
         self._icon_visible = visible
         self.update()
 
-    def set_native_metrics(
+    def setNativeMetrics(
         self, height: int, left: int, right: int, scale: float
     ) -> None:
         """Applies physical-pixel metrics with the Qt scale factor.
@@ -209,7 +212,7 @@ class TitleBar(QtWidgets.QWidget):
         """Returns logical caption space before the first visible control."""
         left = self._native_left + 8
         right = self.width() - self._native_right - 12
-        for widget in self.widgets:
+        for widget in self.widgets():
             if not widget.isHidden():
                 right = min(right, widget.x() - 12)
         return QtCore.QRect(left, 0, max(0, right - left), self.height())
@@ -257,7 +260,7 @@ class TitleBar(QtWidgets.QWidget):
                     text,
                 )
 
-    def interactive_rectangles(self, scale: float) -> list[geometry.Rect]:
+    def interactiveRectangles(self, scale: float) -> list[geometry.Rect]:
         """Returns visible exclusions in window-relative physical pixels.
 
         Args:
@@ -267,12 +270,12 @@ class TitleBar(QtWidgets.QWidget):
             Physical rectangles enclosing visible registered Qt controls.
         """
         result = []
-        for widget in self.widgets:
+        for widget in self.widgets():
             if widget.isHidden():
                 continue
             position = widget.mapTo(self.window(), QtCore.QPoint(0, 0))
             result.append(
-                geometry.physical_rect(
+                geometry.physicalRect(
                     position.x(),
                     position.y(),
                     widget.width(),
@@ -293,7 +296,7 @@ class TitleBar(QtWidgets.QWidget):
             QtCore.QEvent.Type.ChildRemoved,
         ):
             self.update()
-            self.geometry_changed.emit()
+            self.geometryChanged.emit()
         return result
 
     @typing_extensions.override
@@ -310,5 +313,5 @@ class TitleBar(QtWidgets.QWidget):
             QtCore.QEvent.Type.ParentChange,
         ):
             self.update()
-            self.geometry_changed.emit()
+            self.geometryChanged.emit()
         return super().eventFilter(watched, event)

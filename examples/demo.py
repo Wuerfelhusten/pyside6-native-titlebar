@@ -51,7 +51,7 @@ def main() -> int:
     )
     button = QtWidgets.QPushButton("Test Qt button")
     button.setMinimumWidth(150)
-    window.titlebar.add_widget(button)
+    window.titleBar().addWidget(button)
     clicks = 0
 
     def clicked() -> None:
@@ -65,7 +65,7 @@ def main() -> int:
         search = QtWidgets.QLineEdit()
         search.setPlaceholderText("Search …")
         search.setFixedWidth(220)
-        window.titlebar.add_widget(search)
+        window.titleBar().addWidget(search)
     window.setCentralWidget(QtWidgets.QWidget())
     window.resize(900, 500)
     window.show()

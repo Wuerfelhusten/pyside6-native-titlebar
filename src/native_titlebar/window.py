@@ -29,12 +29,11 @@ class NativeWindow(QtWidgets.QWidget):
     the three caption controls on the same top-level HWND.
 
     Attributes:
-        titlebar: Owned TitleBar used to add interactive controls.
-        integration_error: Signal carrying a message for asynchronous failures.
+        integrationError: Signal carrying a message for asynchronous failures.
             Constructor failures instead raise NativeTitleBarError directly.
     """
 
-    integration_error = QtCore.Signal(str)
+    integrationError = QtCore.Signal(str)
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         """Creates and attaches a decorated native window.
@@ -49,24 +48,35 @@ class NativeWindow(QtWidgets.QWidget):
             NativeTitleBarError: If native attachment fails.
         """
         _qt.require_gui_thread()
-        windows.ensure_runtime()
+        windows.ensureRuntime()
         self._ready = False
         self._central: QtWidgets.QWidget | None = None
         super().__init__(parent, QtCore.Qt.WindowType.Window)
         self._layout = QtWidgets.QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setSpacing(0)
-        self.titlebar = titlebar.TitleBar(self)
-        self._layout.addWidget(self.titlebar)
+        self._titlebar = titlebar.TitleBar(self)
+        self._layout.addWidget(self._titlebar)
         self.setCentralWidget(QtWidgets.QWidget())
         self._integration = _integration.WindowIntegration(
             self,
-            self.titlebar,
+            self._titlebar,
             self._update_titlebar_layout,
-            self.integration_error.emit,
+            self.integrationError.emit,
         )
         self._ready = True
         self._integration.attach()
+
+    def titleBar(self) -> titlebar.TitleBar:
+        """Returns the title bar owned by this window.
+
+        Use its addWidget() and removeWidget() methods to manage controls.
+
+        Raises:
+            GUIThreadError: If called outside the QApplication GUI thread.
+        """
+        _qt.require_gui_thread()
+        return self._titlebar
 
     def _update_titlebar_layout(self) -> None:
         """Applies the layout before native input regions are calculated."""
@@ -96,7 +106,7 @@ class NativeWindow(QtWidgets.QWidget):
         self._refresh_central_widget()
         if widget is self._central:
             return
-        if widget is self or widget is getattr(self, "titlebar", None):
+        if widget is self or widget is self._titlebar:
             msg = "The window and title bar cannot be central widgets"
             raise ValueError(msg)
         if self._central is not None:
@@ -145,7 +155,7 @@ class NativeWindow(QtWidgets.QWidget):
         return widget
 
     # Qt's toggled(bool) signal passes its value positionally.
-    def set_tall_title_bar(
+    def setTallTitleBar(
         self,
         tall: bool = True,  # noqa: FBT001, FBT002
     ) -> None:
@@ -198,7 +208,6 @@ class NativeWindow(QtWidgets.QWidget):
         """
         return self._integration.diagnostics()
 
-    @property
-    def last_error(self) -> str | None:
-        """The last asynchronous error, or None after a successful sync."""
-        return self._integration.last_error
+    def lastError(self) -> str | None:
+        """Returns the last integration error, or None after recovery."""
+        return self._integration.last_error()
