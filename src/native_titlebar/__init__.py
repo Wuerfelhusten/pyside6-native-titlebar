@@ -5,19 +5,21 @@
 
 Embeds real Qt widgets beside Windows-managed caption controls.
 
-Create a QApplication, instantiate NativeWindow, and add widgets with
+Create a QApplication, instantiate NativeWindow or NativeMainWindow, and use
 window.titlebar.add_widget(). Window creation requires Windows App Runtime 1.7.
 Importing this package does not bootstrap the runtime or create a window.
 """
 
 from native_titlebar import _version
 from native_titlebar import errors
+from native_titlebar import main_window
 from native_titlebar import titlebar
 from native_titlebar import window
 
 # Keep the package facade while importing modules, as Google style requires.
 GUIThreadError = errors.GUIThreadError
 GuiThreadError = errors.GuiThreadError
+NativeMainWindow = main_window.NativeMainWindow
 NativeTitleBarError = errors.NativeTitleBarError
 NativeWindow = window.NativeWindow
 RuntimeUnavailableError = errors.RuntimeUnavailableError
@@ -28,6 +30,7 @@ __version__ = _version.__version__
 __all__ = [
     "GUIThreadError",
     "GuiThreadError",
+    "NativeMainWindow",
     "NativeTitleBarError",
     "NativeWindow",
     "RuntimeUnavailableError",

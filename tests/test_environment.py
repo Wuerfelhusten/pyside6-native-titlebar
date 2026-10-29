@@ -98,10 +98,14 @@ def test_native_window_requires_qapplication_before_touching_hwnd() -> None:
             textwrap.dedent("""\
                 import native_titlebar
 
-                try:
-                    native_titlebar.NativeWindow()
-                except native_titlebar.GUIThreadError:
-                    print("rejected")
+                for window_type in (
+                    native_titlebar.NativeWindow,
+                    native_titlebar.NativeMainWindow,
+                ):
+                    try:
+                        window_type()
+                    except native_titlebar.GUIThreadError:
+                        print("rejected")
             """),
         ],
         check=True,
@@ -109,4 +113,4 @@ def test_native_window_requires_qapplication_before_touching_hwnd() -> None:
         text=True,
         timeout=20,
     )
-    assert result.stdout.strip() == "rejected"
+    assert result.stdout.splitlines() == ["rejected", "rejected"]

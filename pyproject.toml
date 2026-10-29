@@ -110,7 +110,7 @@ ignore = [
 # Qt virtual methods and public signal aliases must keep their binding names.
 extend-ignore-names = [
   "paintEvent", "eventFilter", "showEvent", "nativeEvent",
-  "geometryChanged", "integrationError",
+  "geometryChanged", "integrationError", "setContentsMargins",
 ]
 
 [tool.ruff.lint.pydocstyle]

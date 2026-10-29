@@ -22,8 +22,8 @@ from native_titlebar import geometry
 class TitleBar(QtWidgets.QWidget):
     """A title bar with real Qt controls and optional window icon/title.
 
-    Obtain this widget from NativeWindow.titlebar. The entire rectangle of each
-    registered widget, including its descendants, receives normal Qt input.
+    Obtain this widget from NativeWindow.titlebar or NativeMainWindow.titlebar.
+    Each registered widget and its descendants receive normal Qt input.
     Unoccupied space remains available for native window dragging.
 
     Attributes:
@@ -36,7 +36,7 @@ class TitleBar(QtWidgets.QWidget):
         """Creates the Qt title bar content on the GUI thread.
 
         Args:
-            parent: Owning NativeWindow or another Qt widget for standalone use.
+            parent: Owning window or another Qt widget for standalone use.
 
         Raises:
             GUIThreadError: If called outside the QApplication GUI thread.

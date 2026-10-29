@@ -20,7 +20,9 @@ from native_titlebar import diagnostics
 from native_titlebar import reports
 
 
-def check_public_types(window: native_titlebar.NativeWindow) -> None:
+def check_public_types(
+    window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
+) -> None:
     """Checks public values, nested report fields, and compatibility aliases."""
     assert_type(window.titlebar, native_titlebar.TitleBar)
     assert_type(window.titlebar.widgets, tuple[QtWidgets.QWidget, ...])
@@ -44,3 +46,19 @@ def check_public_types(window: native_titlebar.NativeWindow) -> None:
     window.set_tall_title_bar("tall")  # type: ignore[arg-type]
     snapshot = window.diagnostics()
     snapshot["qt_dpr"] = "not a number"  # type: ignore[typeddict-item]
+
+
+def check_main_window_types(window: native_titlebar.NativeMainWindow) -> None:
+    """Checks QMainWindow compatibility without casts or untyped wrappers."""
+    main_window: QtWidgets.QMainWindow = window
+    assert_type(main_window, QtWidgets.QMainWindow)
+    assert_type(window.menuBar(), QtWidgets.QMenuBar)
+    assert_type(window.statusBar(), QtWidgets.QStatusBar)
+    assert_type(window.saveState(), QtCore.QByteArray)
+    window.setContentsMargins(1, 2, 3, 4)
+    window.setContentsMargins(QtCore.QMargins(1, 2, 3, 4))
+    window.setCentralWidget(QtWidgets.QWidget())
+    window.addToolBar(QtWidgets.QToolBar())
+    window.addDockWidget(
+        QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, QtWidgets.QDockWidget()
+    )
