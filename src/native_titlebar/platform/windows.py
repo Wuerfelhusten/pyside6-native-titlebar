@@ -21,15 +21,17 @@ from typing import TYPE_CHECKING
 from typing import cast
 import weakref
 
-from PySide6 import QtGui
-
+from native_titlebar import _colors
+from native_titlebar import colors
 from native_titlebar import errors
 from native_titlebar import geometry
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from collections.abc import Mapping
     from collections.abc import Sequence
 
+    from PySide6 import QtGui
     from winrt.windows import foundation
     from winui3.microsoft.ui import windowing
 
@@ -206,54 +208,33 @@ class WindowsTitleBar:
         Args:
             palette: Active and inactive Window/WindowText colors to apply.
         """
+        self.setButtonColors(_colors.resolve(palette, {}))
+
+    def setButtonColors(
+        self, button_colors: Mapping[colors.ButtonColorRole, QtGui.QColor]
+    ) -> None:
+        """Applies a complete set of resolved native caption colors.
+
+        Args:
+            button_colors: All eight roles, with valid QColor values.
+
+        Raises:
+            KeyError: If a required role is missing.
+        """
         # Win10 may ignore these colors. Do not paint substitute buttons.
         from winrt.windows import ui
 
-        roles = (
-            (
-                "button_background_color",
-                QtGui.QPalette.ColorGroup.Active,
-                QtGui.QPalette.ColorRole.Window,
-            ),
-            (
-                "button_foreground_color",
-                QtGui.QPalette.ColorGroup.Active,
-                QtGui.QPalette.ColorRole.WindowText,
-            ),
-            (
-                "button_inactive_background_color",
-                QtGui.QPalette.ColorGroup.Inactive,
-                QtGui.QPalette.ColorRole.Window,
-            ),
-            (
-                "button_inactive_foreground_color",
-                QtGui.QPalette.ColorGroup.Inactive,
-                QtGui.QPalette.ColorRole.WindowText,
-            ),
-        )
-        colors: dict[str, tuple[int, int, int, int]] = {}
-        for name, group, role in roles:
-            color = palette.color(group, role)
-            colors[name] = (
-                color.red(),
-                color.green(),
-                color.blue(),
-                color.alpha(),
-            )
-        background = colors["button_background_color"]
-        foreground = colors["button_foreground_color"]
-        # Setting the normal background does not adapt the SDK's hover defaults.
-        # Blend toward the palette's text color: lighter in dark themes, darker
-        # in light themes. Blending also works on pure black.
-        for state, amount in (("hover", 0.08), ("pressed", 0.12)):
-            red, green, blue = (
-                round(bg + (fg - bg) * amount)
-                for bg, fg in zip(background[:3], foreground[:3], strict=True)
-            )
-            colors[f"button_{state}_background_color"] = (red, green, blue, 255)
-            colors[f"button_{state}_foreground_color"] = foreground
         # Windows retains its own close-button hover/pressed background.
-        values = tuple(colors.items())
+        rgba_values = []
+        for role in colors.ButtonColorRole:
+            color = button_colors[role]
+            rgba_values.append(
+                (
+                    role.value,
+                    (color.red(), color.green(), color.blue(), color.alpha()),
+                )
+            )
+        values = tuple(rgba_values)
         if values == self._colors:
             return
         bar = self._title_bar()

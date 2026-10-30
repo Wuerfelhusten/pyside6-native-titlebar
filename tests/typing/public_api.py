@@ -13,6 +13,7 @@ mypy's unused-ignore check fails if those calls ever become accepted.
 from typing import assert_type
 
 from PySide6 import QtCore
+from PySide6 import QtGui
 from PySide6 import QtWidgets
 
 import native_titlebar
@@ -27,6 +28,16 @@ def check_public_types(
     assert_type(window.titleBar(), native_titlebar.TitleBar)
     assert_type(window.titleBar().widgets(), tuple[QtWidgets.QWidget, ...])
     assert_type(window.titleBar().geometryChanged, QtCore.SignalInstance)
+    assert_type(window.titleBar().buttonColorsChanged, QtCore.SignalInstance)
+    role = native_titlebar.ButtonColorRole.INACTIVE_FOREGROUND
+    assert_type(window.titleBar().buttonColor(role), QtGui.QColor)
+    assert_type(
+        window.titleBar().buttonColors(),
+        dict[native_titlebar.ButtonColorRole, QtGui.QColor],
+    )
+    window.titleBar().setButtonColor(role, QtGui.QColor("gray"))
+    window.titleBar().setButtonColor(role, None)
+    window.titleBar().resetButtonColors()
     assert_type(window.lastError(), str | None)
     assert_type(window.centralWidget(), QtWidgets.QWidget | None)
     assert_type(window.diagnostics(), reports.WindowDiagnostics)
@@ -43,6 +54,8 @@ def check_public_types(
     # These negative contracts are never executed; mypy must reject each one.
     window.titleBar().addWidget("not a widget")  # type: ignore[arg-type]
     window.setTallTitleBar("tall")  # type: ignore[arg-type]
+    window.titleBar().buttonColor("foreground")  # type: ignore[arg-type]
+    window.titleBar().setButtonColor(role, "white")  # type: ignore[arg-type]
     snapshot = window.diagnostics()
     snapshot["qt_dpr"] = "not a number"  # type: ignore[typeddict-item]
 

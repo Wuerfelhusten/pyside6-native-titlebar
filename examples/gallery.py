@@ -14,6 +14,79 @@ from PySide6 import QtWidgets
 import native_titlebar
 
 
+def _add_themes(
+    window: native_titlebar.NativeWindow,
+    layout: QtWidgets.QFormLayout,
+) -> None:
+    """Adds a selector for system, dark, and light title bar palettes."""
+    theme = QtWidgets.QComboBox()
+    theme.addItems(["System", "Dark", "Light"])
+
+    def change_theme(index: int) -> None:
+        palette = QtGui.QPalette()
+        if index:
+            background, foreground = (
+                ("#202020", "#ffffff") if index == 1 else ("#f4f4f4", "#161616")
+            )
+            palette.setColor(
+                QtGui.QPalette.ColorRole.Window, QtGui.QColor(background)
+            )
+            palette.setColor(
+                QtGui.QPalette.ColorRole.WindowText, QtGui.QColor(foreground)
+            )
+        window.setPalette(palette)
+
+    theme.currentIndexChanged.connect(change_theme)
+    layout.addRow("Title bar palette", theme)
+
+
+def _add_button_colors(
+    window: native_titlebar.NativeWindow,
+    layout: QtWidgets.QFormLayout,
+) -> None:
+    """Adds role selection, a color picker, and per-role/all-color reset."""
+    title_bar = window.titleBar()
+    roles = list(native_titlebar.ButtonColorRole)
+    role_selector = QtWidgets.QComboBox()
+    role_selector.addItems(
+        [role.name.replace("_", " ").title() for role in roles]
+    )
+    layout.addRow("Caption button color", role_selector)
+    controls = QtWidgets.QWidget()
+    buttons = QtWidgets.QHBoxLayout(controls)
+    buttons.setContentsMargins(0, 0, 0, 0)
+    choose = QtWidgets.QPushButton("Choose color...")
+    reset = QtWidgets.QPushButton("Reset selected")
+    reset_all = QtWidgets.QPushButton("Reset all colors")
+    buttons.addWidget(choose)
+    buttons.addWidget(reset)
+    buttons.addWidget(reset_all)
+
+    def choose_color() -> None:
+        """Previews focus loss while the color dialog owns activation."""
+        role = roles[role_selector.currentIndex()]
+        color = QtWidgets.QColorDialog.getColor(
+            title_bar.buttonColor(role), window, "Caption button color"
+        )
+        if color.isValid():
+            title_bar.setButtonColor(role, color)
+
+    choose.clicked.connect(choose_color)
+    reset.clicked.connect(
+        lambda: title_bar.setButtonColor(
+            roles[role_selector.currentIndex()], None
+        )
+    )
+    reset_all.clicked.connect(title_bar.resetButtonColors)
+    layout.addRow(controls)
+    hint = QtWidgets.QLabel(
+        "Switch to another window to see inactive buttons fade. "
+        "Custom colors stay in place when changing themes."
+    )
+    hint.setWordWrap(True)
+    layout.addRow(hint)
+
+
 def main() -> int:
     """Runs an interactive configuration example."""
     application = QtWidgets.QApplication(sys.argv[:1])
@@ -44,25 +117,8 @@ def main() -> int:
     title = QtWidgets.QLineEdit(window.windowTitle())
     title.textChanged.connect(window.setWindowTitle)
     layout.addRow("Window title", title)
-    theme = QtWidgets.QComboBox()
-    theme.addItems(["System", "Dark", "Light"])
-
-    def change_theme(index: int) -> None:
-        palette = QtGui.QPalette()
-        if index:
-            background, foreground = (
-                ("#202020", "#ffffff") if index == 1 else ("#f4f4f4", "#161616")
-            )
-            palette.setColor(
-                QtGui.QPalette.ColorRole.Window, QtGui.QColor(background)
-            )
-            palette.setColor(
-                QtGui.QPalette.ColorRole.WindowText, QtGui.QColor(foreground)
-            )
-        window.setPalette(palette)
-
-    theme.currentIndexChanged.connect(change_theme)
-    layout.addRow("Title bar palette", theme)
+    _add_themes(window, layout)
+    _add_button_colors(window, layout)
     tall = QtWidgets.QCheckBox("Taller native title bar")
     tall.toggled.connect(window.setTallTitleBar)
     layout.addRow(tall)

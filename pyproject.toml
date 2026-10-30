@@ -117,6 +117,8 @@ extend-ignore-names = [
   "setIconVisible", "setNativeMetrics", "interactiveRectangles",
   "geometryChanged", "environmentReport", "physicalRect", "dragRectangles",
   "ensureRuntime", "setRegions", "setPalette", "setTall",
+  "setButtonColor", "buttonColor", "buttonColors", "resetButtonColors",
+  "buttonColorsChanged", "setButtonColors",
 ]
 
 [tool.ruff.lint.pydocstyle]

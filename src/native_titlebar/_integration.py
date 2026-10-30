@@ -67,6 +67,7 @@ class WindowIntegration:
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self.sync_safely)
         bar.geometryChanged.connect(self._schedule_sync)
+        bar.buttonColorsChanged.connect(self._schedule_sync)
 
     def attach(self) -> None:
         """Attaches to the current HWND and reconnects screen notifications."""
@@ -175,7 +176,7 @@ class WindowIntegration:
             # interaction. Programmatic resize stays live.
             if not self._in_move_size:
                 self._backend.setRegions(regions)
-            self._backend.setPalette(self._titlebar.palette())
+            self._backend.setButtonColors(self._titlebar.buttonColors())
         finally:
             self._syncing = False
 

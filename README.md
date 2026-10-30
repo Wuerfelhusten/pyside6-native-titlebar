@@ -76,6 +76,30 @@ Use `setWindowTitle()` and `setWindowIcon()` to update the caption, `window.titl
 
 Create and modify widgets on the QApplication GUI thread. Keep the standard window frame enabled; do not combine the library with frameless flags or another title bar integration. API details and ownership rules are documented in the docstrings.
 
+## Button colors
+
+Caption buttons automatically fade when the window loses focus. A distinct `QPalette.Inactive.WindowText` color is preserved; otherwise, the inactive symbol color blends 40% of the active foreground with the inactive background. Windows manages the actual focus transition.
+
+Override individual states through the title bar of either window class:
+
+```python
+from PySide6 import QtGui
+
+role = native_titlebar.ButtonColorRole
+bar = window.titleBar()
+bar.setButtonColor(role.FOREGROUND, QtGui.QColor("#ffffff"))
+bar.setButtonColor(role.INACTIVE_FOREGROUND, QtGui.QColor("#808080"))
+bar.setButtonColor(role.HOVER_BACKGROUND, QtGui.QColor("#404040"))
+
+current_color = bar.buttonColor(role.INACTIVE_FOREGROUND)
+bar.setButtonColor(role.HOVER_BACKGROUND, None)  # Restore one default.
+bar.resetButtonColors()  # Restore all palette-based defaults.
+```
+
+`ButtonColorRole` provides `BACKGROUND` and `FOREGROUND` roles for the normal, `INACTIVE_`, `HOVER_`, and `PRESSED_` states. Overrides survive palette changes and reopening the window. `buttonColor()` and `buttonColors()` return independent copies of the resolved colors; `buttonColorsChanged` signals changes to explicit overrides. Native updates are applied on the next event-loop turn.
+
+These settings affect the three native caption buttons. Use the Qt palette for the surrounding title bar and title text. Background colors support transparency; foreground alpha is ignored by Windows. Windows retains the close button's hover and pressed backgrounds, and Windows 10 may ignore custom caption colors.
+
 ## Examples
 
 Run the examples from a local checkout after `uv sync --locked`:

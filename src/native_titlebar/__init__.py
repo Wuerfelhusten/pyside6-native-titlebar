@@ -11,12 +11,14 @@ Importing this package does not bootstrap the runtime or create a window.
 """
 
 from native_titlebar import _version
+from native_titlebar import colors
 from native_titlebar import errors
 from native_titlebar import main_window
 from native_titlebar import titlebar
 from native_titlebar import window
 
 # Keep the package facade while importing modules, as Google style requires.
+ButtonColorRole = colors.ButtonColorRole
 GUIThreadError = errors.GUIThreadError
 NativeMainWindow = main_window.NativeMainWindow
 NativeTitleBarError = errors.NativeTitleBarError
@@ -27,6 +29,7 @@ UnsupportedPlatformError = errors.UnsupportedPlatformError
 __version__ = _version.__version__
 
 __all__ = [
+    "ButtonColorRole",
     "GUIThreadError",
     "NativeMainWindow",
     "NativeTitleBarError",

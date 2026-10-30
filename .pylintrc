@@ -176,7 +176,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 [BASIC]
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=main,_,paintEvent,eventFilter,nativeEvent,setCentralWidget,centralWidget,takeCentralWidget,setContentsMargins,titleBar,lastError,setTallTitleBar,integrationError,addWidget,removeWidget,addStretch,setTitleVisible,setIconVisible,setNativeMetrics,interactiveRectangles,geometryChanged,environmentReport,physicalRect,dragRectangles,ensureRuntime,setRegions,setPalette,setTall
+good-names=main,_,paintEvent,eventFilter,nativeEvent,setCentralWidget,centralWidget,takeCentralWidget,setContentsMargins,titleBar,lastError,setTallTitleBar,integrationError,addWidget,removeWidget,addStretch,setTitleVisible,setIconVisible,setNativeMetrics,interactiveRectangles,geometryChanged,environmentReport,physicalRect,dragRectangles,ensureRuntime,setRegions,setPalette,setTall,setButtonColor,buttonColor,buttonColors,resetButtonColors,buttonColorsChanged,setButtonColors
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=

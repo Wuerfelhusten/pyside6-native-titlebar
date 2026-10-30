@@ -16,7 +16,9 @@ from PySide6 import QtWidgets
 import shiboken6
 import typing_extensions
 
+from native_titlebar import _colors
 from native_titlebar import _qt
+from native_titlebar import colors
 from native_titlebar import geometry
 
 
@@ -29,9 +31,11 @@ class TitleBar(QtWidgets.QWidget):
 
     Attributes:
         geometryChanged: Emitted when native input regions need recalculation.
+        buttonColorsChanged: Emitted when explicit button colors change.
     """
 
     geometryChanged = QtCore.Signal()
+    buttonColorsChanged = QtCore.Signal()
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         """Creates the Qt title bar content on the GUI thread.
@@ -47,6 +51,7 @@ class TitleBar(QtWidgets.QWidget):
         self.setObjectName("nativeTitleBar")
         self.setAutoFillBackground(True)
         self._widgets: list[QtWidgets.QWidget] = []
+        self._button_colors: dict[colors.ButtonColorRole, QtGui.QColor] = {}
         self._native_metrics: tuple[int, int, int] | None = None
         self._native_left = 0
         self._native_right = 138
@@ -57,6 +62,97 @@ class TitleBar(QtWidgets.QWidget):
         self._layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.setFixedHeight(32)
         self._layout.setContentsMargins(150, 3, 150, 3)
+
+    def setButtonColor(
+        self, role: colors.ButtonColorRole, color: QtGui.QColor | None
+    ) -> None:
+        """Overrides one caption color, or restores its default with None.
+
+        Overrides survive palette changes and native window recreation. A copy
+        of the color is stored. Native updates run on the next event-loop turn.
+        Windows owns focus transitions and the close button's hover/pressed
+        backgrounds; foreground alpha is ignored by Windows.
+
+        Args:
+            role: Native caption button state and foreground/background role.
+            color: Valid QColor override, or None for the palette-based default.
+
+        Raises:
+            GUIThreadError: If called outside the QApplication GUI thread.
+            TypeError: If role or color has an unsupported type.
+            ValueError: If color is an invalid QColor.
+        """
+        _qt.require_gui_thread()
+        self._validate_button_role(role)
+        self._validate_button_color(color)
+        if self._button_colors.get(role) == color:
+            return
+        if color is None:
+            self._button_colors.pop(role, None)
+        else:
+            self._button_colors[role] = QtGui.QColor(color)
+        self.buttonColorsChanged.emit()
+
+    def buttonColor(self, role: colors.ButtonColorRole) -> QtGui.QColor:
+        """Returns a copy of the resolved color, including palette defaults.
+
+        Args:
+            role: Native caption button state and foreground/background role.
+
+        Returns:
+            The requested color with foreground alpha normalized to opaque.
+
+        Raises:
+            GUIThreadError: If called outside the QApplication GUI thread.
+            TypeError: If role is not a ButtonColorRole.
+        """
+        _qt.require_gui_thread()
+        self._validate_button_role(role)
+        return self.buttonColors()[role]
+
+    def buttonColors(self) -> dict[colors.ButtonColorRole, QtGui.QColor]:
+        """Returns independent copies of all eight resolved button colors.
+
+        Defaults follow the current palette. If its active and inactive text
+        colors match, inactive symbols use 40 percent foreground contrast.
+        Hover/pressed backgrounds blend 8/12 percent toward the foreground.
+        Overrides take precedence. These colors affect only the native buttons,
+        not the Qt title text, icon, or title bar background.
+
+        Raises:
+            GUIThreadError: If called outside the QApplication GUI thread.
+        """
+        _qt.require_gui_thread()
+        return _colors.resolve(self.palette(), self._button_colors)
+
+    def resetButtonColors(self) -> None:
+        """Removes all overrides and resumes palette-based button colors.
+
+        Raises:
+            GUIThreadError: If called outside the QApplication GUI thread.
+        """
+        _qt.require_gui_thread()
+        if self._button_colors:
+            self._button_colors.clear()
+            self.buttonColorsChanged.emit()
+
+    @staticmethod
+    def _validate_button_role(role: object) -> None:
+        """Rejects strings and unrelated enums before changing native state."""
+        if not isinstance(role, colors.ButtonColorRole):
+            msg = "role must be a ButtonColorRole."
+            raise TypeError(msg)
+
+    @staticmethod
+    def _validate_button_color(color: object) -> None:
+        """Rejects unsupported values and invalid QColor objects."""
+        if color is not None:
+            if not isinstance(color, QtGui.QColor):
+                msg = "color must be a QColor or None."
+                raise TypeError(msg)
+            if not color.isValid():
+                msg = "color must be a valid QColor."
+                raise ValueError(msg)
 
     def widgets(self) -> tuple[QtWidgets.QWidget, ...]:
         """Returns registered, live controls still parented to this title bar.

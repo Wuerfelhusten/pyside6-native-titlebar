@@ -7,6 +7,7 @@ Runs real HWND tests on a Windows desktop with Windows App Runtime 1.7.
 """
 
 from collections.abc import Iterator
+from collections.abc import Mapping
 from collections.abc import Sequence
 import ctypes
 from ctypes import wintypes
@@ -109,9 +110,11 @@ def _hit_test(
     )
 
 
-def _fail_palette(palette: QtGui.QPalette) -> None:
+def _fail_button_colors(
+    button_colors: Mapping[native_titlebar.ButtonColorRole, QtGui.QColor],
+) -> None:
     """Simulates failure while applying native caption colors."""
-    del palette  # The injected failure is independent of palette contents.
+    del button_colors  # The failure is independent of the requested colors.
     msg = "simulated native failure"
     raise OSError(msg)
 
@@ -258,7 +261,134 @@ def test_palette_matches_native_buttons_and_hover_contrast_after_theme_changes(
                 expected.green(),
                 expected.blue(),
             )
+        inactive = bar.button_inactive_foreground_color
+        assert inactive is not None
+        inactive_lightness = QtGui.QColor(
+            inactive.r, inactive.g, inactive.b
+        ).lightnessF()
+        text_lightness = QtGui.QColor(text).lightnessF()
+        assert abs(inactive_lightness - normal_lightness) < abs(
+            text_lightness - normal_lightness
+        )
         assert window.diagnostics()["last_error"] is None
+
+
+def test_button_color_overrides_survive_theme_changes_and_reopening(
+    window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
+) -> None:
+    """Checks all native state colors and override lifetime on real HWNDs."""
+    role = native_titlebar.ButtonColorRole
+    expected = {
+        item: QtGui.QColor(index * 20, 100, 150)
+        for index, item in enumerate(role)
+    }
+    title_bar = window.titleBar()
+    for item, color in expected.items():
+        title_bar.setButtonColor(item, color)
+    palette = QtGui.QPalette(window.palette())
+    palette.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor("white"))
+    palette.setColor(QtGui.QPalette.ColorRole.WindowText, QtGui.QColor("black"))
+    window.setPalette(palette)
+    _settle()
+    window.close()
+    window.show()
+    _settle()
+    assert window._integration._backend is not None
+    assert window._integration._backend.native is not None
+    bar = window._integration._backend.native.title_bar
+    actual = {
+        role.BACKGROUND: bar.button_background_color,
+        role.FOREGROUND: bar.button_foreground_color,
+        role.INACTIVE_BACKGROUND: bar.button_inactive_background_color,
+        role.INACTIVE_FOREGROUND: bar.button_inactive_foreground_color,
+        role.HOVER_BACKGROUND: bar.button_hover_background_color,
+        role.HOVER_FOREGROUND: bar.button_hover_foreground_color,
+        role.PRESSED_BACKGROUND: bar.button_pressed_background_color,
+        role.PRESSED_FOREGROUND: bar.button_pressed_foreground_color,
+    }
+    for item, native_color in actual.items():
+        assert native_color is not None
+        assert (
+            native_color.r,
+            native_color.g,
+            native_color.b,
+            native_color.a,
+        ) == expected[item].getRgb()
+        assert title_bar.buttonColor(item) == expected[item]
+    assert window.lastError() is None
+
+
+def test_button_colors_reset_to_current_theme_and_validate_inputs(
+    window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
+) -> None:
+    """Checks reset semantics, defensive copies, and rejected invalid values."""
+    title_bar = window.titleBar()
+    role = native_titlebar.ButtonColorRole
+    signals = QtTest.QSignalSpy(title_bar.buttonColorsChanged)
+    chosen = QtGui.QColor("#12abef")
+    title_bar.setButtonColor(role.FOREGROUND, chosen)
+    title_bar.setButtonColor(role.FOREGROUND, QtGui.QColor(chosen))
+    assert signals.count() == 1
+    chosen.setRed(255)
+    returned = title_bar.buttonColor(role.FOREGROUND)
+    returned.setRed(255)
+    snapshot = title_bar.buttonColors()
+    snapshot[role.FOREGROUND].setRed(255)
+    assert title_bar.buttonColor(role.FOREGROUND).name() == "#12abef"
+    with pytest.raises(ValueError, match="valid QColor"):
+        title_bar.setButtonColor(role.FOREGROUND, QtGui.QColor())
+    with pytest.raises(TypeError, match="ButtonColorRole"):
+        title_bar.setButtonColor("foreground", chosen)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="QColor or None"):
+        title_bar.setButtonColor(role.FOREGROUND, "red")  # type: ignore[arg-type]
+    assert signals.count() == 1
+    palette = QtGui.QPalette(window.palette())
+    palette.setColor(QtGui.QPalette.ColorRole.Window, QtGui.QColor("#202020"))
+    palette.setColor(QtGui.QPalette.ColorRole.WindowText, QtGui.QColor("white"))
+    window.setPalette(palette)
+    title_bar.setButtonColor(role.INACTIVE_FOREGROUND, QtGui.QColor("#abcdef"))
+    title_bar.setButtonColor(role.FOREGROUND, None)
+    assert title_bar.buttonColor(role.FOREGROUND).name() == "#ffffff"
+    assert title_bar.buttonColor(role.INACTIVE_FOREGROUND).name() == "#abcdef"
+    title_bar.resetButtonColors()
+    title_bar.resetButtonColors()
+    assert signals.count() == 4
+    assert title_bar.buttonColor(role.INACTIVE_FOREGROUND).name() == "#797979"
+    _settle()
+    assert window._integration._backend is not None
+    assert window._integration._backend.native is not None
+    bar = window._integration._backend.native.title_bar
+    native_color = bar.button_inactive_foreground_color
+    assert native_color is not None
+    assert (native_color.r, native_color.g, native_color.b) == (121, 121, 121)
+
+
+def test_button_color_api_requires_the_gui_thread(
+    window: native_titlebar.NativeWindow | native_titlebar.NativeMainWindow,
+) -> None:
+    """Rejects worker-thread color access before it can touch the QWidget."""
+    title_bar = window.titleBar()
+    role = native_titlebar.ButtonColorRole.FOREGROUND
+    failures: list[str] = []
+
+    def access_colors() -> None:
+        """Exercises setters and getters from a non-GUI thread."""
+        for operation in (
+            lambda: title_bar.setButtonColor(role, QtGui.QColor("red")),
+            lambda: title_bar.buttonColor(role),
+            title_bar.buttonColors,
+            title_bar.resetButtonColors,
+        ):
+            try:
+                operation()
+            except native_titlebar.GUIThreadError as exc:
+                failures.append(str(exc))
+
+    worker = threading.Thread(target=access_colors)
+    worker.start()
+    worker.join(timeout=5)
+    assert not worker.is_alive()
+    assert len(failures) == 4
 
 
 def test_maximize_restore_and_central_widget_ownership(
@@ -489,15 +619,17 @@ def test_async_failure_is_signaled_and_cleared_after_recovery(
     failures: list[str] = []
     window.integrationError.connect(failures.append)
     assert window._integration._backend is not None
-    original = window._integration._backend.setPalette
+    original = window._integration._backend.setButtonColors
 
     monkeypatch.setattr(
-        window._integration._backend, "setPalette", _fail_palette
+        window._integration._backend, "setButtonColors", _fail_button_colors
     )
     window._integration.sync_safely()
     assert window.lastError() == "simulated native failure"
     assert failures == [window.lastError()]
-    monkeypatch.setattr(window._integration._backend, "setPalette", original)
+    monkeypatch.setattr(
+        window._integration._backend, "setButtonColors", original
+    )
     window._integration.sync_safely()
     assert window.lastError() is None
 
