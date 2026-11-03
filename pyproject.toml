@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
   "typing-extensions>=4.5,<5",
-  "PySide6>=6.11.3,<7",
+  "PySide6>=6.8,<7",
   "winui3-Microsoft.UI.Windowing[all]==3.2.1; sys_platform == 'win32'",
   "winui3-Microsoft.UI.Interop==3.2.1; sys_platform == 'win32'",
   "winui3-Microsoft.Windows.ApplicationModel.DynamicDependency.Bootstrap==3.2.1; sys_platform == 'win32'",
